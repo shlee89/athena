@@ -1,0 +1,90 @@
+<!--
+  ~ Copyright 2014-present Open Networking Laboratory
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<html>
+<body>
+<p>
+    ONOS architecture is strictly segmented into a <em>protocol-agnostic system
+    core</em> tier and the <em>protocol-aware providers</em> tier as shown in
+    the figure below:<br>
+    <img src="doc-files/onos-tiers.png" alt="ONOS architecture tiers">
+</p>
+
+<p>
+    The <em>ONOS core</em> is responsible for tracking information about the
+    network environment and distributing it to the applications either
+    synchronously via query or asynchronously via listener callbacks. The
+    core is also responsible for persisting select state and synchronizing state
+    among the cluster peers.
+</p>
+
+<p>
+    The <em>protocol-aware providers</em> are responsible for interacting with
+    the network environment using various control and configuration protocols
+    and supplying such sensory data to the core. Some providers may also need to
+    accept control edicts from the core and apply them to the environment
+    using the appropriate protocol-specific means.
+</p>
+
+<p>
+    The figure below provides a visual inventory of the various ONOS subsystems.
+    The ones with the gray outline represent either work in progress features
+    planned for release in 2015.<br>
+    <img src="doc-files/onos-subsystems.png" alt="ONOS architecture tiers">
+
+</p>
+
+<p>
+    The following diagram describes the general structure of each ONOS subsystem:
+    <br>
+    <img src="doc-files/onos-subsystem.png" alt="ONOS subsystem structure"><br>
+    For example, the device-subsystem comprises of a core
+    {@link org.onosproject.net.device.impl.DeviceManager},
+    which exposes a north-bound
+    {@link org.onosproject.net.device.DeviceService} through which applications or other core components
+    can learn about the global infrastructure device inventory and through
+    which they can also subscribe for asynchronous {@link org.onosproject.net.device.DeviceEvent}
+    notifications via the {@link org.onosproject.net.device.DeviceListener} mechanism. A set of
+    administrative actions can be performed via {@link org.onosproject.net.device.DeviceAdminService},
+    e.g. setting mastership role, removing a decommissioned device.
+</p>
+
+<p>
+    On the south-bound side, the core {@link org.onosproject.net.device.impl.DeviceManager}
+    exposes a {@link org.onosproject.net.device.DeviceProviderRegistry} through which any number of
+    {@link org.onosproject.net.device.DeviceProvider} entities can register and in turn obtain a
+    {@link org.onosproject.net.device.DeviceProviderService}. Device and port information can then be
+    supplied to the core by each provider through the provider service issued
+    to them. When a provider unregisters, its {@link org.onosproject.net.device.DeviceProviderService}
+    will be invalidated and can no longer be used for interacting with the
+    core.
+</p>
+
+<p>
+    Within the core, the tasks of indexing, persisting and synchronizing the
+    global device and port state with the cluster peers falls on the
+    {@link org.onosproject.net.device.DeviceStore}.
+</p>
+
+<p>
+    Similar structure applies to the link subsystem, host subsystem and others.
+</p>
+
+<p>
+    <em>More information to come later...</em>
+</p>
+
+</body>
+</html>

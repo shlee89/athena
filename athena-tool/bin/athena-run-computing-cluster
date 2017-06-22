@@ -1,0 +1,52 @@
+#!/bin/bash
+#
+# Script to setup Spark cluster
+# by Jinwoo Kim
+
+# Prints usage help
+function _usage {
+cat << _EOF_
+Usage: Remotely/locally starts Spark instances.
+_EOF_
+}
+
+[ "$1" = "-h" ] && _usage && exit 0
+
+USERNAME=ubuntu
+source $ATHENA_ROOT/athena-tool/config/athena-config-env
+
+# get Spark IP addresses
+SPIS=$(env | grep SP[0-9]| cut -d= -f2)
+IFS=' ' read -r -a LIST <<< $SPIS
+echo $SPIS
+
+if [ -z "$LIST" ]; then
+  printf "error: no computing instances configured, quitting early\n" >&2 && exit 0
+fi
+
+len=${#LIST[@]}
+
+# start Spark cluster
+if [ $len -gt 1 ] ; then
+    printf "starting Spark instances as distributed mode...\n"
+    for NODE in ${LIST[@]}; do
+#        ssh -f $USERNAME@$NODE 'sudo $(echo $(find $(pwd)/ -type d | grep mongodb-linux-x86_64-3.2.1/bin ))/mongod --replSet "rs0" --fork --logpath /var/log/mongod.log'
+        sudo start-stop-daemon --start --pidfile /var/run/mongodb.pid --make-pidfile --exec ~/Applications/mongodb-linux-x86_64-3.2.1/bin/mongod -b
+     done
+
+     sleep 3
+
+    for NODE in ${LIST[@]}; do
+        scp "athena-run-computing-instance" "$USERNAME@$NODE:/home/$USERNAME/"
+        ssh -tt $USERNAME@$NODE "
+        chmod +x ~/athena-run-computing-instance
+        ~/athena-run-computing-instance $SP1 $SP2 $SP3
+        "
+    done
+else
+    printf "starting a Spark instance as standalone mode...\n"
+    SPARK_DIR=`sudo find ~ -type d | grep spark-1.6.1-bin-hadoop2.6/sbin`
+    $SPARK_DIR/start-master.sh -i 0.0.0.0
+    $SPARK_DIR/start-slave.sh spark://127.0.0.1:7077
+fi
+exit 0

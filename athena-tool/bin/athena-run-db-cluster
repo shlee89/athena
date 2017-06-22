@@ -1,0 +1,49 @@
+#!/bin/bash
+#
+# Script to setup MongoDB cluster
+# by Jinwoo Kim
+
+# Prints usage help
+function _usage {
+cat << _EOF_
+Usage: Remotely starts MongoDB instances.
+_EOF_
+}
+
+[ "$1" = "-h" ] && _usage && exit 0
+
+USERNAME=ubuntu
+source $ATHENA_ROOT/athena-tool/config/athena-config-env
+
+# get MongoDB IP addresses
+MDIS=$(env | grep MD[0-9] | cut -d= -f2)
+IFS=' ' read -r -a LIST <<< $MDIS
+
+if [ -z "$LIST" ]; then
+  printf "error: no database instances configured, quitting early\n" >&2 && exit 0
+fi
+
+len=${#LIST[@]}
+
+# start MongoDB cluster
+if [ $len -gt 1 ] ; then
+    printf "starting MongoDB instances as distributed mode...\n"
+    for NODE in ${LIST[@]}; do
+        sudo start-stop-daemon --start --pidfile /var/run/mongodb.pid --make-pidfile --exec ~/Applications/mongodb-linux-x86_64-3.2.1/bin/mongod --dbpath=data/db -b
+     done
+
+     sleep 3
+
+    for NODE in ${LIST[@]}; do
+        scp "athena-run-db-instance" "$USERNAME@$NODE:/home/$USERNAME/"
+        ssh -tt $USERNAME@$NODE "
+        chmod +x ~/athena-run-db-instance
+        ~/athena-run-db-instance $MD1 $MD2 $MD3
+        "
+    done
+else
+    printf "starting a MongoDB instance as standalone mode...\n"
+    MONGO_DIR=`sudo find ~ -type d | grep mongodb-linux-x86_64-3.2.1/bin`
+    sudo start-stop-daemon --start --pidfile /var/run/mongodb.pid --make-pidfile --exec $MONGO_DIR/mongod -b
+fi
+exit 0

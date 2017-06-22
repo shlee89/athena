@@ -1,0 +1,259 @@
+/*
+ * Copyright 2014-present Open Networking Laboratory
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
+ ONOS GUI -- Topology View (layout) -- CSS file
+ */
+
+/* --- Base SVG Layer --- */
+
+#ov-topo svg {
+    /* prevents the little cut/copy/paste square that would appear on iPad */
+    -webkit-user-select: none;
+}
+
+
+/* --- "No Devices" Layer --- */
+
+#ov-topo svg #topo-noDevsLayer {
+    visibility: hidden;
+}
+
+#ov-topo svg #topo-noDevsLayer text {
+    font-size: 60pt;
+    font-style: italic;
+}
+
+
+/* --- Topo Summary Panel --- */
+
+#topo-p-summary {
+    padding: 16px;
+}
+
+
+/* --- Topo Detail Panel --- */
+
+#topo-p-detail {
+    padding: 16px;
+    top: 370px;
+}
+html[data-platform='iPad'] #topo-p-detail {
+    top: 386px;
+}
+
+#topo-p-detail .actionBtns .actionBtn {
+    display: inline-block;
+}
+#topo-p-detail .actionBtns .actionBtn svg {
+    width: 28px;
+    height: 28px;
+}
+
+
+/* --- general topo-panel styling --- */
+
+.topo-p div.header {
+    margin-bottom: 10px;
+}
+
+.topo-p div.header div.icon {
+    vertical-align: middle;
+    display: inline-block;
+}
+.topo-p div.body {
+    overflow-y: scroll;
+}
+
+.topo-p div.body::-webkit-scrollbar {
+    display: none;
+}
+
+.topo-p svg {
+    display: inline-block;
+    width: 26px;
+    height: 26px;
+}
+
+
+.topo-p h2 {
+    padding: 0 0 0 10px;
+    margin: 0;
+    font-weight: lighter;
+    word-wrap: break-word;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.topo-p h3 {
+    padding: 0 4px;
+    margin: 0;
+    word-wrap: break-word;
+    top: 20px;
+    left: 50px;
+}
+
+.topo-p p,
+.topo-p table {
+    padding: 0;
+    margin: 0;
+    width: 100%;
+}
+
+.topo-p td {
+    word-wrap: break-word;
+}
+.topo-p td.label {
+    font-weight: bold;
+    padding: 0 10px 0 0;
+}
+.topo-p td.value {
+    padding: 0;
+}
+
+#topo-p-summary  td.label {
+    width: 50%;
+}
+
+#topo-p-detail  div.actionBtns {
+    padding-top: 6px;
+}
+
+.topo-p hr {
+    height: 1px;
+    border: 0;
+    margin: 4px -3px;
+}
+
+
+/* --- Topo Instance Panel --- */
+
+#topo-p-instance {
+    height: 85px;
+    padding: 10px;
+}
+
+#topo-p-instance div.onosInst {
+    display: inline-block;
+    width: 170px;
+    height: 85px;
+    cursor: pointer;
+}
+
+#topo-p-instance svg text.instTitle {
+    font-size: 11pt;
+    font-weight: bold;
+    font-variant: small-caps;
+    text-transform: uppercase;
+}
+#topo-p-instance svg text.instLabel {
+    font-size: 10pt;
+}
+
+
+/* --- Toolbar --- */
+
+#toolbar-topo-tbar {
+  padding: 6px;
+}
+
+#toolbar-topo-tbar .tbar-row.right {
+    width: 100%;
+}
+
+#toolbar-topo-tbar .tbar-row-text {
+    height: 21px;
+    text-align: right;
+    padding: 8px 60px 0 0;
+    font-style: italic;
+}
+
+
+/* --- Topo Nodes --- */
+
+#ov-topo svg .suppressed {
+    opacity: 0.5 !important;
+}
+
+#ov-topo svg .suppressedmax {
+    opacity: 0.2 !important;
+}
+
+#ov-topo svg .node {
+    cursor: pointer;
+    fill-rule: evenodd;
+}
+
+#ov-topo svg .node text {
+    pointer-events: none;
+}
+
+
+/* Device Nodes */
+
+#ov-topo svg .node.device {
+}
+
+
+/* Link Labels */
+
+#ov-topo svg .linkLabel text {
+    text-anchor: middle;
+    stroke-width: 0.1;
+    font-size: 9pt;
+}
+
+
+/* Port Labels */
+
+#ov-topo svg .portLabel text {
+    text-anchor: middle;
+    stroke-width: 0.1;
+    font-size: 11pt;
+}
+
+/* Number of Links Labels */
+#ov-topo line.numLinkHash {
+    stroke-width: 3;
+}
+
+#ov-topo text.numLinkText {
+    font-size: 15pt;
+    text-anchor: middle;
+}
+
+
+/* Sprite Layer */
+
+#ov-topo svg #topo-sprites use {
+    stroke-width: 2;
+}
+#ov-topo svg #topo-sprites text {
+    text-anchor: middle;
+    font-size: 20pt;
+    font-style: italic;
+}
+
+
+/* -- MISC -- */
+
+.map-list {
+    padding: 10px;
+}
+
+.map-list select {
+    font-size: 20px;
+}

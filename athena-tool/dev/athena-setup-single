@@ -1,0 +1,15 @@
+#!/bin/bash
+#
+# Script to setup Single Mode for Athena
+# several code have been borrowed from ONOS script
+# by Jinwoo Kim
+
+# download & install MongoDB
+cd ~/Downloads
+wget https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-3.2.1.tgz 
+tar -zxvf mongodb-linux-x86_64-3.2.1.tgz -C ~/Applications/
+sudo mkdir -p /data/db
+
+# download & install Spark
+wget http://d3kbcqa49mib13.cloudfront.net/spark-1.6.1-bin-hadoop2.6.tgz
+tar -zxvf spark-1.6.1-bin-hadoop2.6.tgz -C ~/Applications/

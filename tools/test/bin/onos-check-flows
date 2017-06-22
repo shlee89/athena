@@ -1,0 +1,19 @@
+#!/bin/bash
+# -----------------------------------------------------------------------------
+# Checks ONOS summary data
+# -----------------------------------------------------------------------------
+
+aux=/tmp/stc-$$.log
+trap "rm -f $aux 2>/dev/null" EXIT
+
+for i in {1..6}; do
+    onos ${1:-$OCI} "onos:flows" > $aux
+    if grep "PENDING_" $aux; then
+        sleep 5
+    else
+        cat $aux
+        exit 0
+    fi
+done
+cat $aux
+exit 1

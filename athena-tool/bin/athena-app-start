@@ -1,0 +1,19 @@
+#!/bin/bash
+# -----------------------------------------------------------------------------
+# Pushes Athena applications to the ONOS instances
+# -----------------------------------------------------------------------------
+
+if [[ $MODE == *"DISTRIBUTED"* ]]; then
+username="ubuntu"
+else
+username=$USER
+fi
+
+cur_dir=${PWD}
+
+for i in $*; do
+    echo "Execute athena application on" $i
+    ssh $user_name@$i 'unzip -o ~/athena_app.zip'
+    ssh $user_name@$i 'sudo pkill -f "athena-tester-1.6.0.jar"'
+    ssh $user_name@$i 'cd ~/target && screen -d -m java -cp "./athena-tester-1.6.0.jar:./lib/*" athena.user.application.Main'
+    done

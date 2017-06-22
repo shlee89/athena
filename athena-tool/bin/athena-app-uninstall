@@ -1,0 +1,12 @@
+#!/bin/bash
+# -----------------------------------------------------------------------------
+# Pushes Athena applications to the ONOS instances
+# -----------------------------------------------------------------------------
+
+user_name="ubuntu"
+cur_dir=${PWD}
+
+for i in $*; do
+    echo "Kill Athena application on" $i
+    ssh $user_name@$i 'sudo pkill -f "athena-tester-1.6.0.jar"'
+    done

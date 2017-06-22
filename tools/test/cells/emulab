@@ -1,0 +1,10 @@
+export OCI=$OC1
+# onos deploy machines
+export OC1="10.1.13.2"
+#export OC2="192.168.0.12"
+#export OC3="192.168.0.13"
+# MongoDB Cluster
+export MD1="192.168.0.31"
+export ONOS_APPS="drivers,openflow,proxyarp,optical,fwd"
+export ONOS_USER=sdn
+export ONOS_GROUP=sdn

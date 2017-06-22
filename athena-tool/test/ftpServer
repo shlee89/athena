@@ -1,0 +1,4 @@
+#!/bin/bash
+# Run http & ftp server
+sudo python SimpleHTTPServer.py 80 &
+sudo python -m pyftpdlib -p 21 -r 20-20

@@ -1,0 +1,6 @@
+{
+  "event": "cancelTraffic",
+  "sid": 3,
+  "payload": {
+  }
+}

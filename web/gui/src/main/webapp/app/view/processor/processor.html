@@ -1,0 +1,49 @@
+<!-- processor partial HTML -->
+<div id="ov-processor">
+    <div class="tabular-header">
+        <h2>
+            Packet Processors ({{tableData.length}} Processors total)
+        </h2>
+        <div class="ctrl-btns">
+            <div class="refresh" ng-class="{active: autoRefresh}"
+                 icon icon-size="42" icon-id="refresh"
+                 tooltip tt-msg="autoRefreshTip"
+                 ng-click="toggleRefresh()"></div>
+        </div>
+    </div>
+
+    <div class="summary-list" onos-table-resize>
+        <div class="table-header" onos-sortable-header>
+            <table>
+                <tr>
+                    <td class="priority" colId="priority" sortable col-width="80px">Priority </td>
+                    <td colId="type" sortable col-width="80px">Type </td>
+                    <td colId="processor" sortable col-width="500px">Class </td>
+                    <td class="number"  colId="packets" sortable col-width="100px">Packets </td>
+                    <td class="number" colId="avgMillis" sortable col-width="100px">Average (ms) </td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="table-body">
+            <table onos-flash-changes id-prop="id">
+                <tr ng-if="!tableData.length" class="no-data">
+                    <td colspan="5">
+                        {{annots.no_rows_msg}}
+                    </td>
+                </tr>
+
+                <tr ng-repeat="processor in tableData track by $index"
+                    ng-repeat-complete row-id="{{processor.id}}">
+                    <td class="priority">{{processor.priority}}</td>
+                    <td>{{processor.type}}</td>
+                    <td>{{processor.processor}}</td>
+                    <td class="number">{{processor.packets}}</td>
+                    <td class="number">{{processor.avgMillis}}</td>
+                </tr>
+            </table>
+        </div>
+
+    </div>
+
+</div>

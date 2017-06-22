@@ -1,0 +1,51 @@
+<!-- Link partial HTML -->
+<div id="ov-link">
+    <div class="tabular-header">
+        <h2>Links ({{tableData.length}} total)</h2>
+        <div class="ctrl-btns">
+            <div class="refresh" ng-class="{active: autoRefresh}"
+                 icon icon-size="42" icon-id="refresh"
+                 tooltip tt-msg="autoRefreshTip"
+                 ng-click="toggleRefresh()"></div>
+        </div>
+    </div>
+
+    <div class="summary-list" onos-table-resize>
+        <div class="table-header" onos-sortable-header>
+            <table>
+                <tr>
+                    <td colId="_iconid_state" class="table-icon" sortable></td>
+                    <td colId="one" sortable>Port 1 </td>
+                    <td colId="two" sortable>Port 2 </td>
+                    <td colId="type" sortable>Type </td>
+                    <td colId="direction" sortable>Direction </td>
+                    <td colId="durable" sortable>Durable </td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="table-body">
+            <table onos-flash-changes id-prop="one">
+                <tr ng-if="!tableData.length" class="no-data">
+                    <td colspan="6">
+                        {{annots.no_rows_msg}}
+                    </td>
+                </tr>
+
+                <tr ng-repeat="link in tableData track by $index"
+                    ng-repeat-complete row-id="{{link.one}}">
+                    <td class="table-icon">
+                        <div icon icon-id="{{link._iconid_state}}"></div>
+                    </td>
+                    <td>{{link.one}}</td>
+                    <td>{{link.two}}</td>
+                    <td>{{link.type}}</td>
+                    <td ng-bind-html="link.direction"></td>
+                    <td>{{link.durable}}</td>
+                </tr>
+            </table>
+        </div>
+
+    </div>
+
+</div>

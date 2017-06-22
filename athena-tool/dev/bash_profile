@@ -1,0 +1,8 @@
+#!/bin/bash
+#
+# Athena bash profile.
+# by Jinwoo Kim
+
+export ATHENA_ROOT=~/athena-1.6
+export PATH="$PATH:$ATHENA_ROOT/athena-tool/bin:$ATHENA_ROOT/athena-tool/dev"
+. $ATHENA_ROOT/tools/dev/bash_profile

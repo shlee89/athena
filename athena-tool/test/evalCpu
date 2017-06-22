@@ -1,0 +1,31 @@
+#!/bin/bash
+i=0
+target="/home/sdn/result/eval3/"
+ex=".txt"
+target_c=$target$1_c$ex
+target_m=$target$1_m$ex
+echo Stored_File_name $target
+
+j=0
+while [ 1 ]
+do
+j=`expr $j + 1`
+target_c=$target$1_$j$ex
+while [ 1 ]
+do
+    res=$(top -b -n 1 | grep java | awk '{print $9}')
+    echo $res
+    echo $res >> $target_c
+    #res_c=$(top -b -n 1 | grep java)
+    #echo $res_c
+    #echo $res_c >> $target_c
+    sleep 1
+    i=`expr $i + 1`
+    if [ $i -eq 60 ]; then
+        i=0
+        break
+    fi
+    #//a=expr`$a + 1`
+done
+done
+

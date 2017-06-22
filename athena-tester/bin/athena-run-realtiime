@@ -1,0 +1,3 @@
+#!/bin/bash
+source $ATHENA_ROOT/athena-tool/config/athena-config-env
+java -cp "$ATHENA_ROOT/athena-tester/target/athena-tester-1.6.0.jar:$ATHENA_ROOT/athena-tester/target/lib/*" athena.user.application.Main

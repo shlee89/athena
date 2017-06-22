@@ -1,0 +1,49 @@
+<!-- settings partial HTML -->
+<div id="ov-settings">
+    <div class="tabular-header">
+        <h2>Component Settings ({{tableData.length}} total)</h2>
+        <div class="ctrl-btns">
+            <div class="refresh" ng-class="{active: autoRefresh}"
+                 icon icon-size="42" icon-id="refresh"
+                 tooltip tt-msg="autoRefreshTip"
+                 ng-click="toggleRefresh()"></div>
+        </div>
+    </div>
+
+    <div class="summary-list" onos-table-resize>
+        <div class="table-header" onos-sortable-header>
+            <table>
+                <tr>
+                    <td colId="component" sortable col-width="300px">Component </td>
+                    <td colId="id" sortable col-width="240px">Property </td>
+                    <td colId="type" sortable col-width="100px">Type </td>
+                    <td colId="value" sortable col-width="100px">Value </td>
+                    <td colId="defValue" sortable col-width="100px">Default </td>
+                    <td colId="desc">Description </td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="table-body">
+            <table onos-flash-changes id-prop="id">
+                <tr ng-if="!tableData.length" class="no-data">
+                    <td colspan="6">
+                        {{annots.no_rows_msg}}
+                    </td>
+                </tr>
+
+                <tr ng-repeat="prop in tableData track by $index"
+                    ng-repeat-complete row-id="{{prop.id}}">
+                    <td>{{prop.component}}</td>
+                    <td>{{prop.id}}</td>
+                    <td>{{prop.type}}</td>
+                    <td>{{prop.value}}</td>
+                    <td>{{prop.defValue}}</td>
+                    <td>{{prop.desc}}</td>
+                </tr>
+            </table>
+        </div>
+
+    </div>
+
+</div>

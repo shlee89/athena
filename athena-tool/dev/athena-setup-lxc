@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+# install lxc
+sudo apt-get install lxc -y
+
+# create 9 lxc containers
+sudo lxc-create -n onos1 -t ubuntu
+sudo lxc-copy -n onos1 -N onos2
+sudo lxc-copy -n onos1 -N onos3
+sudo lxc-copy -n onos1 -N mongodb1
+sudo lxc-copy -n onos1 -N mongodb2
+sudo lxc-copy -n onos1 -N mongodb3
+sudo lxc-copy -n onos1 -N spark1
+sudo lxc-copy -n onos1 -N spark2
+sudo lxc-copy -n onos1 -N spark3
+
+# start 9 lxc containers
+sudo lxc-start -n onos1 -d
+sudo lxc-start -n onos2 -d
+sudo lxc-start -n onos3 -d
+sudo lxc-start -n mongodb1 -d
+sudo lxc-start -n mongodb2 -d
+sudo lxc-start -n mongodb3 -d
+sudo lxc-start -n spark1 -d
+sudo lxc-start -n spark2 -d
+sudo lxc-start -n spark3 -d
+
+# check the status of lxc containers
+sudo lxc-ls -f

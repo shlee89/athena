@@ -1,0 +1,1454 @@
+package org.onosproject.framework.abnormal.database.impl;
+
+import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.Session;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
+import com.mongodb.MongoClient;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
+import com.mongodb.client.MongoDatabase;
+import org.apache.felix.scr.annotations.Activate;
+import org.apache.felix.scr.annotations.Component;
+import org.apache.felix.scr.annotations.Deactivate;
+import org.apache.felix.scr.annotations.Service;
+import org.bson.Document;
+import org.bson.conversions.Bson;
+import org.onosproject.core.ApplicationId;
+import org.onosproject.framework.abnormal.database.DataRequestObject;
+import org.onosproject.framework.abnormal.database.DataRequestObjectType;
+import org.onosproject.framework.abnormal.database.DataRequester;
+import org.onosproject.framework.abnormal.database.DatabaseEventListener;
+import org.onosproject.framework.abnormal.database.DatabaseType;
+import org.onosproject.framework.abnormal.database.FeatureData;
+import org.onosproject.framework.abnormal.database.FeatureDatabaseProvider;
+import org.onosproject.framework.abnormal.database.FeatureDatabaseProviderRegistry;
+import org.onosproject.framework.abnormal.database.FeatureDatabaseProviderService;
+import org.onosproject.framework.abnormal.database.FeatureDatabaseService;
+import org.onosproject.framework.abnormal.database.FeatureName;
+import org.onosproject.framework.abnormal.database.IndexName;
+import org.onosproject.framework.abnormal.database.OnlineEventTable;
+import org.onosproject.framework.abnormal.database.QueryIdentifier;
+import org.onosproject.framework.abnormal.database.RequestOperator;
+import org.onosproject.framework.abnormal.database.RequestOperatorType;
+import org.onosproject.framework.abnormal.database.RichFeatureCalculator;
+import org.onosproject.framework.abnormal.database.RichFeatureName;
+import org.onosproject.framework.abnormal.database.SortedUserDefinedFeatures;
+import org.onosproject.framework.abnormal.feature.AggregateStatisticsFeature;
+import org.onosproject.framework.abnormal.feature.ErrorMessageFeature;
+import org.onosproject.framework.abnormal.feature.Feature;
+import org.onosproject.framework.abnormal.feature.FeatureCategory;
+import org.onosproject.framework.abnormal.feature.FeatureIndex;
+import org.onosproject.framework.abnormal.feature.FeatureIndexField;
+import org.onosproject.framework.abnormal.feature.FeatureType;
+import org.onosproject.framework.abnormal.feature.FlowRemovedFeature;
+import org.onosproject.framework.abnormal.feature.FlowStatisticsFeature;
+import org.onosproject.framework.abnormal.feature.PacketInFeature;
+import org.onosproject.framework.abnormal.feature.PortStatisticsFeature;
+import org.onosproject.framework.abnormal.feature.PortStatusFeature;
+import org.onosproject.framework.abnormal.feature.QueueStatisticsFeature;
+import org.onosproject.framework.abnormal.feature.TableStatisticsFeature;
+import org.onosproject.framework.abnormal.feature.UnitAggregateStatistics;
+import org.onosproject.framework.abnormal.feature.UnitErrorMessageInformation;
+import org.onosproject.framework.abnormal.feature.UnitFlowRemovedInformation;
+import org.onosproject.framework.abnormal.feature.UnitFlowStatistics;
+import org.onosproject.framework.abnormal.feature.UnitPacketInInformation;
+import org.onosproject.framework.abnormal.feature.UnitPortStatistics;
+import org.onosproject.framework.abnormal.feature.UnitPortStatusInformation;
+import org.onosproject.framework.abnormal.feature.UnitQueueStatistics;
+import org.onosproject.framework.abnormal.feature.UnitTableStatistics;
+import org.onosproject.net.provider.AbstractProviderRegistry;
+import org.onosproject.net.provider.AbstractProviderService;
+import org.slf4j.Logger;
+//import weka.core.Attribute;
+//import weka.core.FastVector;
+
+//import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Filters.gt;
+import static com.mongodb.client.model.Filters.gte;
+import static com.mongodb.client.model.Filters.lt;
+import static com.mongodb.client.model.Filters.lte;
+import static com.mongodb.client.model.Filters.ne;
+import static com.mongodb.client.model.Filters.or;
+import static org.slf4j.LoggerFactory.getLogger;
+
+/**
+ * Created by seunghyeon on 8/27/15.
+ */
+@Component(immediate = true)
+@Service
+public class FeatureDatabaseManagerBackup
+        extends AbstractProviderRegistry<FeatureDatabaseProvider, FeatureDatabaseProviderService>
+        implements FeatureDatabaseService, FeatureDatabaseProviderRegistry {
+
+    private final Logger log = getLogger(getClass());
+/*
+    private final ExecutorService executorSynchronousMsg
+            = Executors.newFixedThreadPool(32);
+
+
+    private final ExecutorService executorAsynchronousMsg
+            = Executors.newFixedThreadPool(6);
+*/
+
+    protected Multimap<Integer, DatabaseEventListener> databaseEventListener
+            = ArrayListMultimap.create();
+
+    private List<OnlineEventTable> onlineEventTableList = new ArrayList<>();
+
+    //Database access
+    MongoClient mongoClient;
+    MongoDatabase mongoDatabase;
+    MongoCollection dbCollection;
+
+    @Activate
+    public void activate() {
+        log.info("started");
+        connectToDatabase();
+        //cassandra Test
+        Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
+        Session session = cluster.newSession();
+        log.info("temp" + cluster.getClass());
+
+    }
+
+    @Deactivate
+    public void deactivate() {
+        log.info("Stopped");
+    }
+
+    boolean connectToDatabase() {
+        try {
+            mongoClient = new MongoClient("localhost", 27017);
+            mongoDatabase = mongoClient.getDatabase("featureStore");
+            dbCollection = mongoDatabase.getCollection("featureCollection");
+            if (dbCollection == null) {
+                mongoDatabase.createCollection("featureCollection");
+                dbCollection = mongoDatabase.getCollection("featureCollection");
+            }
+
+            log.info("Connect to database successfully!!");
+
+            return true;
+        } catch (Exception e) {
+            log.warn(e.getMessage());
+            return false;
+        }
+    }
+
+
+    @Override
+    protected FeatureDatabaseProviderService createProviderService(FeatureDatabaseProvider provider) {
+        return new InternalFeatureDatabaseProviderService(provider);
+    }
+
+    @Override
+    public void addDatabaseEventListener(int prioirity, DatabaseEventListener listener) {
+        databaseEventListener.put(prioirity, listener);
+
+    }
+
+    @Override
+    public void removeDatabaseEventListener(DatabaseEventListener listener) {
+        databaseEventListener.values().remove(listener);
+    }
+
+    @Override
+    public boolean registerOnlineFeature(ApplicationId applicationId,
+                                         QueryIdentifier identifier, DataRequester dataRequester) {
+
+        if (applicationId == null) {
+            log.warn("applicationId could not be null");
+            return false;
+        }
+
+        if (identifier == null) {
+            log.warn("identifier could not be null");
+            return false;
+        }
+
+        if (dataRequester == null) {
+            log.warn("dataRequester could not be null");
+            return false;
+        }
+
+        OnlineEventTable onlineEventTable = new OnlineEventTable(applicationId,
+                identifier,
+                dataRequester,
+                extractedElementsFromPredefinedFeatures(dataRequester.getListOfFeatures()));
+        onlineEventTableList.add(onlineEventTable);
+
+        return true;
+    }
+
+    @Override
+    public boolean unRegisterOnlineFeature(ApplicationId applicationId, QueryIdentifier identifier) {
+        OnlineEventTable onlineEventTable;
+
+        for (int i = 0; i < onlineEventTableList.size(); i++) {
+            onlineEventTable = onlineEventTableList.get(i);
+
+            if (onlineEventTable.getApplicationId() == applicationId &&
+                    onlineEventTable.getQueryIdentifier() == identifier) {
+                onlineEventTableList.remove(i);
+                return true;
+            }
+        }
+
+        return false;
+
+    }
+
+
+    public void checkOnlineEventSatisfyList(List<Document> onlineFeatureList) {
+
+        for (int i = 0; i < onlineFeatureList.size(); i++) {
+            checkOnlineEventSatisfy(onlineFeatureList.get(i));
+        }
+
+    }
+
+    public void checkOnlineEventSatisfy(Document onlineFeature) {
+        OnlineEventTable onlineEventTable;
+        DataRequestObject dataRequestObject;
+        if (onlineFeature == null) {
+            return;
+        }
+        Document innerFeature = (Document) onlineFeature.get(FeatureName.FEATURE);
+
+        for (int i = 0; i < onlineEventTableList.size(); i++) {
+            onlineEventTable = onlineEventTableList.get(i);
+
+            dataRequestObject = onlineEventTable.getDataRequester().getDataRequestObject();
+
+            if (isSatisfyOnlineEvent(onlineFeature, innerFeature, dataRequestObject)) {
+                //Extract values
+                HashMap<String, Object> elements = getElementsFromDocuments(onlineFeature,
+                        onlineEventTable.getSortedUserDefinedFeatures());
+
+                //notify all (To be optimized later)
+                for (DatabaseEventListener d : databaseEventListener.values()) {
+                    d.getFeatureEvent(onlineEventTable.getApplicationId(),
+                            onlineEventTable.getQueryIdentifier(),
+                            elements);
+                }
+            }
+        }
+    }
+
+    public boolean isSatisfyOnlineEvent(Document onlineFeature,
+                                        Document innerFeature,
+                                        DataRequestObject dataRequestObject) {
+//        DataRequestObject dataRequestObject = onlineEventTable.getDataRequester().getDataRequestObject();
+        List<Object> dataRequestObjectValueList = dataRequestObject.getDataRequestObjectValueList();
+        RequestOperatorType requestOperatorType = dataRequestObject.getRequestOperatorType();
+
+        if (!(dataRequestObjectValueList.size() > 0)) {
+            return false;
+        }
+
+        if (requestOperatorType == RequestOperatorType.COMPARABLE) {
+
+            return getSatisficationFromRequestOperatorComparison(onlineFeature,
+                    innerFeature,
+                    dataRequestObject);
+
+        } else if (requestOperatorType == RequestOperatorType.LOGICAL) {
+            return getSatisficationFromRequestOperatorLogical(onlineFeature,
+                    innerFeature,
+                    dataRequestObject);
+
+        } else {
+            log.warn("not supported RequestOperatorType");
+        }
+
+        return true;
+    }
+
+    public boolean getSatisficationFromRequestOperatorLogical(Document onlineFeature,
+                                                              Document innerFeature,
+                                                              DataRequestObject dataRequestObject) {
+        List<Boolean> innerSatisficationList = new ArrayList<>();
+        RequestOperator requestOperator = dataRequestObject.getRequestOperator();
+        List<Object> valueList = dataRequestObject.getDataRequestObjectValueList();
+
+        for (int i = 0; i < valueList.size(); i++) {
+            if (!(valueList.get(i) instanceof DataRequestObject)) {
+                log.warn("Rqeust type must be DataRequestOBject");
+                return false;
+            }
+            innerSatisficationList.add(isSatisfyOnlineEvent(onlineFeature,
+                    innerFeature,
+                    (DataRequestObject) valueList.get(i)));
+        }
+
+        return checkLogicalComparisionFromResults(innerSatisficationList,
+                requestOperator);
+    }
+
+    public boolean checkLogicalComparisionFromResults(List<Boolean> satisficationList,
+                                                      RequestOperator requestOperator) {
+        int numOfTrue = 0;
+
+        for (int i = 0; i < satisficationList.size(); i++) {
+            if (satisficationList.get(i)) {
+                numOfTrue++;
+            }
+        }
+
+        switch (requestOperator.getValue()) {
+            case RequestOperator.LOGICAL_AND:
+                return numOfTrue == satisficationList.size();
+
+            case RequestOperator.LOGICAL_OR:
+                return numOfTrue > 0;
+
+            case RequestOperator.LOGICAL_IN:
+            default:
+                log.warn("not supported logical type");
+                return false;
+        }
+    }
+
+    public boolean getSatisficationFromRequestOperatorComparison(Document onlineFeature,
+                                                                 Document innerFeature,
+                                                                 DataRequestObject dataRequestObject) {
+
+        DataRequestObjectType dataRequestObjectType = dataRequestObject.getDataRequestObjectType();
+        RequestOperator requestOperator = dataRequestObject.getRequestOperator();
+        Object name = dataRequestObject.getFeatureName();
+        List<Object> value = dataRequestObject.getDataRequestObjectValueList();
+
+        String target = null;
+        Object targetValue = null;
+        if (dataRequestObjectType == DataRequestObjectType.FEATURE) {
+            target = ((FeatureName) name).getValue();
+            targetValue = innerFeature.get(target);
+        } else if (dataRequestObjectType == DataRequestObjectType.INDEX) {
+            target = ((IndexName) name).getValue();
+            targetValue = onlineFeature.get(target);
+        } else {
+            log.warn("not supported type :{}", dataRequestObjectType.toString());
+            return false;
+        }
+
+        if (targetValue == null) {
+            return false;
+        }
+
+        if (!(value.size() > 0)) {
+            log.warn("list size is not bigger than 0 :{}", value.size());
+            return false;
+        }
+
+
+        for (int i = 0; i < value.size(); i++) {
+            boolean result = comparisonBetweenObjectWithOperator(targetValue,
+                    value.get(i),
+                    requestOperator);
+
+            if (!result) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    //always convert to Long value
+    public boolean comparisonBetweenObjectWithOperator(Object obj1, Object obj2, RequestOperator requestOperator) {
+        Long longObj1 = convertObjectValueToLong(obj1);
+        Long longObj2 = convertObjectValueToLong(obj2);
+
+        if (longObj1 == null || longObj2 == null) {
+            log.warn("comparsionBetwenObjectWithOperator: obj1 and obj2 MUST NOT BE null. Cannot compare!");
+            return false;
+        }
+        return comparisonBetweenObjectWithOperatorLong(longObj1,
+                longObj2,
+                requestOperator);
+    }
+
+    public Long convertObjectValueToLong(Object obj) {
+        Long returnValue = null;
+        if (obj instanceof Long) {
+            return (Long) obj;
+        }
+
+        if (obj instanceof Integer) {
+            returnValue = new Long(((Integer) obj).longValue());
+            return returnValue;
+        }
+        log.warn("convertObjectValueToLong: obj MUST be Long or Integer");
+        return null;
+    }
+
+    public boolean comparisonBetweenObjectWithOperatorLong(Long obj1,
+                                                           Long obj2,
+                                                           RequestOperator requestOperator) {
+        switch (requestOperator.getValue()) {
+            case RequestOperator.COMPARISON_EQ:
+                if (obj1.longValue() == obj2.longValue()) {
+                    return true;
+                }
+                break;
+            case RequestOperator.COMPARISON_GT:
+                if (obj1.longValue() > obj2.longValue()) {
+                    return true;
+                }
+                break;
+            case RequestOperator.COMPARISON_GTE:
+                if (obj1.longValue() >= obj2.longValue()) {
+                    return true;
+                }
+                break;
+            case RequestOperator.COMPARISON_LT:
+                if (obj1.longValue() < obj2.longValue()) {
+                    return true;
+                }
+                break;
+            case RequestOperator.COMPARISON_LTE:
+                if (obj1.longValue() <= obj2.longValue()) {
+                    return true;
+                }
+                break;
+            case RequestOperator.COMPARISON_NE:
+                if (obj1.longValue() != obj2.longValue()) {
+                    return true;
+                }
+                break;
+            default:
+                log.warn("not supported comparsion type");
+                return false;
+        }
+        return false;
+    }
+
+
+    /**
+     * Converting User-defined constaints to Bson constraints.
+     *
+     * @param dataRequestObject
+     * @return
+     */
+    public Bson generateBson(DataRequestObject dataRequestObject) {
+        List<Object> dataRequestObjectValueList = dataRequestObject.getDataRequestObjectValueList();
+        RequestOperatorType requestOperatorType = dataRequestObject.getRequestOperatorType();
+        Bson query = null;
+
+        if (!(dataRequestObjectValueList.size() > 0)) {
+            return null;
+        }
+
+        if (requestOperatorType == RequestOperatorType.COMPARABLE) {
+            query = getBsonFromRequestOperatorComparison(dataRequestObject);
+
+        } else if (requestOperatorType == RequestOperatorType.LOGICAL) {
+            query = getBsonFromRequestOperatorLogical(dataRequestObject);
+
+        } else {
+            log.warn("not supported RequestOperatorType");
+        }
+
+        return query;
+
+    }
+
+
+    /**
+     * It supports features as INDEX and FEATURE!
+     *
+     * @param dataRequestObject
+     * @return
+     */
+    public Bson getBsonFromRequestOperatorComparison(DataRequestObject dataRequestObject) {
+
+        DataRequestObjectType dataRequestObjectType = dataRequestObject.getDataRequestObjectType();
+        RequestOperator requestOperator = dataRequestObject.getRequestOperator();
+        Object name = dataRequestObject.getFeatureName();
+        List<Object> value = dataRequestObject.getDataRequestObjectValueList();
+        Bson obj = null;
+
+        String target = null;
+        if (dataRequestObjectType == DataRequestObjectType.FEATURE) {
+            target = FeatureName.FEATURE + "." + ((FeatureName) name).getValue();
+        } else if (dataRequestObjectType == DataRequestObjectType.INDEX) {
+            target = ((IndexName) name).getValue();
+
+        } else {
+            log.warn("not supported type :{}", dataRequestObjectType.toString());
+            return null;
+        }
+
+        if (!(value.size() > 0)) {
+            log.warn("list size is not bigger than 0 :{}", value.size());
+            return null;
+        }
+
+        for (int i = 0; i < value.size(); i++) {
+            switch (requestOperator.getValue()) {
+                case RequestOperator.COMPARISON_EQ:
+                    obj = eq(target, value.get(i));
+                    //comparator = "$eq";
+                    break;
+                case RequestOperator.COMPARISON_GT:
+                    obj = gt(target, value.get(i));
+                    //comparator = "$gt";
+                    break;
+                case RequestOperator.COMPARISON_GTE:
+                    obj = gte(target, value.get(i));
+                    //comparator = "$gte";
+                    break;
+                case RequestOperator.COMPARISON_LT:
+                    obj = lt(target, value.get(i));
+                    //comparator = "$lt";
+                    break;
+                case RequestOperator.COMPARISON_LTE:
+                    obj = lte(target, value.get(i));
+                    //comparator = "$lte";
+                    break;
+                case RequestOperator.COMPARISON_NE:
+                    obj = ne(target, value.get(i));
+                    //comparator = "$ne";
+                    break;
+                default:
+                    log.warn("not supported comparsion type");
+                    return null;
+            }
+
+        }
+        return obj;
+    }
+
+
+    public Bson getBsonFromRequestOperatorLogical(DataRequestObject dataRequestObject) {
+        List<Bson> innerObjectList = new ArrayList<>();
+        Iterable<Bson> iterableFilters;
+        RequestOperator requestOperator = dataRequestObject.getRequestOperator();
+        List<Object> valueList = dataRequestObject.getDataRequestObjectValueList();
+        Bson query;
+
+        for (int i = 0; i < valueList.size(); i++) {
+            if (!(valueList.get(i) instanceof DataRequestObject)) {
+                log.warn("Rqeust type must be DataRequestOBject");
+                return null;
+            }
+
+            innerObjectList.add(generateBson((DataRequestObject) valueList.get(i)));
+        }
+        iterableFilters = innerObjectList;
+
+        switch (requestOperator.getValue()) {
+            case RequestOperator.LOGICAL_AND:
+                query = and(iterableFilters);
+                break;
+            case RequestOperator.LOGICAL_OR:
+                query = or(iterableFilters);
+                break;
+            case RequestOperator.LOGICAL_IN:
+//                query = in(iterableFilters);
+            default:
+                log.warn("not supported logical type");
+                return null;
+        }
+
+        return query;
+    }
+
+
+    @Override
+    public void requestFeatures(ApplicationId applicationId, DataRequester dataRequester) {
+
+        Bson query = generateBson(dataRequester.getDataRequestObject());
+
+        MongoCursor<Document> cursor = dbCollection.find(query).iterator();
+        ArrayList<HashMap<String, Object>> generatedFeatures = new ArrayList<>();
+
+        SortedUserDefinedFeatures sortedUserDefinedFeatures =
+                extractedElementsFromPredefinedFeatures(dataRequester.getListOfFeatures());
+        //List<String> extractedFeatures = sortedUserDefinedFeatures.getListOfFeatures();
+
+        try {
+            while (cursor.hasNext()) {
+                Document currentCusor = cursor.next();
+                HashMap<String, Object> elements = getElementsFromDocuments(currentCusor, sortedUserDefinedFeatures);
+                generatedFeatures.add(elements);
+            }
+        } finally {
+            cursor.close();
+        }
+
+        FeatureData featureData = new FeatureData(new DatabaseType(DatabaseType.MONGO_DB),
+                generatedFeatures.iterator());
+        for (DatabaseEventListener d : databaseEventListener.values()) {
+            d.getRequestedFeatures(applicationId, featureData);
+        }
+    }
+
+    private HashMap<String, Object> getElementsFromDocuments(Document currentFeature,
+                                                             SortedUserDefinedFeatures sortedUserDefinedFeatures) {
+
+        List<String> extractedFeatures = sortedUserDefinedFeatures.getListOfFeatures();
+        Document currentFeatureCusor = null;
+        HashMap<String, Object> elements = new HashMap<>();
+
+        for (int i = 0; i < extractedFeatures.size(); i++) {
+            if (i < sortedUserDefinedFeatures.getStartingPointOfFeature()) {
+                //extract from simple
+                if (currentFeature.get(extractedFeatures.get(i)) != null) {
+                    elements.put(extractedFeatures.get(i), currentFeature.get(extractedFeatures.get(i)));
+                }
+            } else if (i < sortedUserDefinedFeatures.getStartingPointOfRichFeature() &&
+                    i >= sortedUserDefinedFeatures.getStartingPointOfFeature()) {
+                //extract from feature
+                if (currentFeatureCusor == null) {
+                    currentFeatureCusor = (Document) currentFeature.get(FeatureName.FEATURE);
+                }
+
+                if (currentFeatureCusor.get(extractedFeatures.get(i)) != null) {
+                    elements.put(extractedFeatures.get(i), currentFeatureCusor.get(extractedFeatures.get(i)));
+                }
+            } else {
+                //extract from rich feature
+                if (generateRichFeature(extractedFeatures.get(i), currentFeatureCusor) != null) {
+                    elements.put(extractedFeatures.get(i),
+                            generateRichFeature(extractedFeatures.get(i), currentFeatureCusor));
+                }
+            }
+        }
+        return elements;
+    }
+
+
+    private Long generateRichFeature(String richFeature, Document cursor) {
+
+//        RichFeatureCalculator richFeatureCalculator = new RichFeatureCalculator(FeatureName.FEATURE);
+        RichFeatureCalculator richFeatureCalculator = new RichFeatureCalculator();
+        List<String> richFeatureList = richFeatureCalculator.getRichFeatureList(richFeature);
+        Long value = richFeatureCalculator.calculateReceivedValue(
+                cursor.get(richFeatureList.get(0)),
+                cursor.get(richFeatureList.get(2)),
+                richFeatureList.get(1));
+        if (value.longValue() == richFeatureCalculator.getNoValue().longValue()) {
+            log.info("Rich value doesn`t contain real value.");
+        }
+        return value;
+
+    }
+
+
+    public SortedUserDefinedFeatures extractedElementsFromPredefinedFeatures(List<String> requestedFeatures) {
+        SortedUserDefinedFeatures sortedUserDefinedFeatures = extractedElementsFromPredefinedIndexs();
+        RichFeatureName richFeatureName = new RichFeatureName();
+        boolean[] richFeatureFlags = new boolean[requestedFeatures.size() + 1];
+
+        //flaging richFeatures
+        for (int i = 0; i < requestedFeatures.size(); i++) {
+            if (richFeatureName.isElements(requestedFeatures.get(i))) {
+                richFeatureFlags[i] = true;
+                if (!sortedUserDefinedFeatures.isHasRichFeature()) {
+                    sortedUserDefinedFeatures.setIsHasRichFeature(true);
+                }
+            } else {
+                richFeatureFlags[i] = false;
+                if (!sortedUserDefinedFeatures.isHasFeature()) {
+                    sortedUserDefinedFeatures.setIsHasFeature(true);
+                }
+            }
+        }
+
+        //Store SimpleFeatures
+        for (int i = 0; i < requestedFeatures.size(); i++) {
+            if (!richFeatureFlags[i]) {
+                sortedUserDefinedFeatures.addStartingPointCount();
+                sortedUserDefinedFeatures.addFeatures(requestedFeatures.get(i));
+            }
+        }
+
+        if (sortedUserDefinedFeatures.isHasRichFeature()) {
+            //Store RichFeatures
+            for (int i = 0; i < requestedFeatures.size(); i++) {
+                if (richFeatureFlags[i]) {
+                    sortedUserDefinedFeatures.addFeatures(requestedFeatures.get(i));
+                }
+            }
+        }
+
+        return sortedUserDefinedFeatures;
+    }
+
+    public SortedUserDefinedFeatures extractedElementsFromPredefinedIndexs() {
+        SortedUserDefinedFeatures sortedUserDefinedFeatures = new SortedUserDefinedFeatures();
+        List<String> listofExtractedIndexes = new ArrayList<>();
+        IndexName indexName = new IndexName();
+        List<String> listOfIndex = indexName.getListOfFeatures();
+
+        for (int i = 0; i < listOfIndex.size(); i++) {
+            listofExtractedIndexes.add(listOfIndex.get(i));
+        }
+        sortedUserDefinedFeatures.setListOfFeatures(listofExtractedIndexes);
+        sortedUserDefinedFeatures.setStartingPointOfRichFeature(listofExtractedIndexes.size());
+        sortedUserDefinedFeatures.setStartingPointOfFeature(listofExtractedIndexes.size());
+        return sortedUserDefinedFeatures;
+    }
+
+    /*
+        private final class OnlineFeatureHandler implements Runnable {
+            private FeatureType featureType;
+            private FeatureCategory featureCategory;
+            private Feature feature;
+
+            Document storedFeature = null;
+            List<Document> listOfStoredFeatures = null;
+
+            public OnlineFeatureHandler(FeatureType featureType,
+                                        FeatureCategory featureCategory,
+                                        Feature feature) {
+                this.featureType = featureType;
+                this.featureCategory = featureCategory;
+                this.feature = feature;
+            }
+
+            @Override
+            public void run() {
+
+                //Store features to persistent storage
+                switch (featureCategory) {
+                    case ASYNCHRONOUS_PACKET_IN:
+                        storedFeature = storePacketIn(featureType,
+                                featureCategory, (PacketInFeature) feature);
+                        checkOnlineEventSatisfy(storedFeature);
+                        break;
+
+                    case SYNCHRONOUS_FLOW_STATISTICS:
+                        listOfStoredFeatures = storeFlowStats(featureType,
+                                featureCategory, (FlowStatisticsFeature) feature);
+                        checkOnlineEventSatisfyList(listOfStoredFeatures);
+                        break;
+
+
+                    case SYNCHRONOUS_PORT_STATISTICS:
+                        listOfStoredFeatures = storePortStats(featureType,
+                                featureCategory, (PortStatisticsFeature) feature);
+                        checkOnlineEventSatisfyList(listOfStoredFeatures);
+                        break;
+
+                    case ASYNCHRONOUS_ERROR_MSG:
+                        storedFeature = storeErrorMsg(featureType,
+                                featureCategory, (ErrorMessageFeature) feature);
+                        checkOnlineEventSatisfy(storedFeature);
+                        break;
+
+                    case ASYNCHRONOUS_FLOW_REMOVED:
+                        storedFeature = storeFlowRemoved(featureType,
+                                featureCategory, (FlowRemovedFeature) feature);
+                        checkOnlineEventSatisfy(storedFeature);
+
+                        break;
+
+                    case ASYNCHRONOUS_PORT_STATUS:
+                        storedFeature = storePortStatus(featureType,
+                                featureCategory, (PortStatusFeature) feature);
+                        checkOnlineEventSatisfy(storedFeature);
+                        break;
+
+
+                    case SYNCHRONOUS_QUEUE_STATISTICS:
+
+                        listOfStoredFeatures = storeQueueStats(featureType,
+                                featureCategory, (QueueStatisticsFeature) feature);
+                        checkOnlineEventSatisfyList(listOfStoredFeatures);
+                        break;
+
+                    case SYNCHRONOUS_TABLE_STATISTICS:
+                        listOfStoredFeatures = storeTabletats(featureType,
+                                featureCategory, (TableStatisticsFeature) feature);
+                        checkOnlineEventSatisfyList(listOfStoredFeatures);
+                        break;
+
+                    case SYNCHRONOUS_AGGREGATE_STATISTICS:
+                        listOfStoredFeatures = storeAggregateStats(featureType,
+                                featureCategory, (AggregateStatisticsFeature) feature);
+                        checkOnlineEventSatisfyList(listOfStoredFeatures);
+                        break;
+
+
+                    default:
+                        break;
+                }
+
+            }
+        }
+    */
+    private class InternalFeatureDatabaseProviderService extends AbstractProviderService<FeatureDatabaseProvider>
+            implements FeatureDatabaseProviderService {
+
+        InternalFeatureDatabaseProviderService(FeatureDatabaseProvider provider) {
+            super(provider);
+        }
+
+        @Override
+        public void featureHandler(FeatureType featureType, FeatureCategory featureCategory, Feature feature) {
+
+
+            Document storedFeature = null;
+            List<Document> listOfStoredFeatures = null;
+
+            //Store features to persistent storage
+            switch (featureCategory) {
+                case ASYNCHRONOUS_ERROR_MSG:
+                    storedFeature = storeErrorMsg(featureType,
+                            featureCategory, (ErrorMessageFeature) feature);
+                    checkOnlineEventSatisfy(storedFeature);
+                    break;
+                case ASYNCHRONOUS_FLOW_REMOVED:
+                    storedFeature = storeFlowRemoved(featureType,
+                            featureCategory, (FlowRemovedFeature) feature);
+                    checkOnlineEventSatisfy(storedFeature);
+                    break;
+                case ASYNCHRONOUS_PACKET_IN:
+                    storedFeature = storePacketIn(featureType,
+                            featureCategory, (PacketInFeature) feature);
+                    checkOnlineEventSatisfy(storedFeature);
+                    break;
+                case ASYNCHRONOUS_PORT_STATUS:
+                    storedFeature = storePortStatus(featureType,
+                            featureCategory, (PortStatusFeature) feature);
+                    checkOnlineEventSatisfy(storedFeature);
+                    break;
+                case SYNCHRONOUS_FLOW_STATISTICS:
+                    listOfStoredFeatures = storeFlowStats(featureType,
+                            featureCategory, (FlowStatisticsFeature) feature);
+                    checkOnlineEventSatisfyList(listOfStoredFeatures);
+                    break;
+                case SYNCHRONOUS_QUEUE_STATISTICS:
+                    listOfStoredFeatures = storeQueueStats(featureType,
+                            featureCategory, (QueueStatisticsFeature) feature);
+                    checkOnlineEventSatisfyList(listOfStoredFeatures);
+                    break;
+                case SYNCHRONOUS_TABLE_STATISTICS:
+                    listOfStoredFeatures = storeTabletats(featureType,
+                            featureCategory, (TableStatisticsFeature) feature);
+                    checkOnlineEventSatisfyList(listOfStoredFeatures);
+                    break;
+                case SYNCHRONOUS_AGGREGATE_STATISTICS:
+                    listOfStoredFeatures = storeAggregateStats(featureType,
+                            featureCategory, (AggregateStatisticsFeature) feature);
+                    checkOnlineEventSatisfyList(listOfStoredFeatures);
+                    break;
+                case SYNCHRONOUS_PORT_STATISTICS:
+                    listOfStoredFeatures = storePortStats(featureType,
+                            featureCategory, (PortStatisticsFeature) feature);
+                    checkOnlineEventSatisfyList(listOfStoredFeatures);
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
+
+    }
+
+
+    private Document extractIndexfromFeature(FeatureIndex fi) {
+        Document doc = new Document();
+        FeatureIndexField field;
+        for (int i = 0; i < fi.getFeatureList().size(); i++) {
+            field = fi.getFeatureList().get(i);
+
+            switch (field) {
+                case SWITCH_DATAPATH_ID:
+                    doc.append(IndexName.SWITCH_DATAPATH_ID, fi.getSwitchDatapathId());
+                    break;
+                case SWITCH_PORT_ID:
+                    doc.append(IndexName.SWITCH_PORT_ID, fi.getSwitchPortId());
+                    break;
+                case SWITCH_QUEUE_ID:
+                    doc.append(IndexName.SWITCH_QUEUE_ID, fi.getSwitchQeueueId());
+                    break;
+                case SWITCH_TABLE_ID:
+                    doc.append(IndexName.SWITCH_TABLE_ID, fi.getSwitchTableId());
+                    break;
+                case MATCH_IN_PORT:
+                    doc.append(IndexName.MATCH_IN_PORT, fi.getMatchInPort());
+                    break;
+                case MATCH_IN_PHY_PORT:
+                    doc.append(IndexName.MATCH_IN_PHY_PORT, fi.getMatchInPhyPort());
+                    break;
+                case MATCH_ETH_DST:
+                    doc.append(IndexName.MATCH_ETH_DST, fi.getMatchEthDst());
+                    break;
+                case MATCH_ETH_SRC:
+                    doc.append(IndexName.MATCH_ETH_SRC, fi.getMatchEthSrc());
+                    break;
+                case MATCH_ETH_TYPE:
+                    doc.append(IndexName.MATCH_ETH_TYPE, fi.getMatchEthType());
+                    break;
+                case MATCH_VLAN_VID:
+                    doc.append(IndexName.MATCH_VLAN_VID, fi.getMatchVlanVid());
+                    break;
+                case MATCH_VLAN_PCP:
+                    doc.append(IndexName.MATCH_VLAN_PCP, fi.getMatchVlanPcp());
+                    break;
+                case MATCH_IP_DSCP:
+                    doc.append(IndexName.MATCH_IP_DSCP, fi.getMatchIpDscp());
+                    break;
+                case MATCH_IP_ECN:
+                    doc.append(IndexName.MATCH_IP_ECN, fi.getMatchIpEcn());
+                    break;
+                case MATCH_IP_PROTO:
+                    doc.append(IndexName.MATCH_IP_PROTO, fi.getMatchIpProto());
+                    break;
+                case MATCH_IPV4_SRC:
+                    doc.append(IndexName.MATCH_IPV4_SRC, fi.getMatchIpv4Src());
+                    break;
+                case MATCH_IPV4_SRC_MASK:
+                    doc.append(IndexName.MATCH_IPV4_SRC_MASK, fi.getMatchIpv4SrcMask());
+                    break;
+                case MATCH_IPV4_DST:
+                    doc.append(IndexName.MATCH_IPV4_DST, fi.getMatchIpv4Dst());
+                    break;
+                case MATCH_IPV4_DST_MASK:
+                    doc.append(IndexName.MATCH_IPV4_DST_MASK, fi.getMatchIpv4DstMask());
+                    break;
+                case MATCH_TCP_SRC:
+                    doc.append(IndexName.MATCH_TCP_SRC, fi.getMatchTcpSrc());
+                    break;
+                case MATCH_TCP_DST:
+                    doc.append(IndexName.MATCH_TCP_DST, fi.getMatchTcpDst());
+                    break;
+                case MATCH_UDP_SRC:
+                    doc.append(IndexName.MATCH_UDP_SRC, fi.getMatchUdpSrc());
+                    break;
+                case MATCH_UDP_DST:
+                    doc.append(IndexName.MATCH_UDP_DST, fi.getMatchUdpDst());
+                    break;
+                case MATCH_MPLS_LABEL:
+                    doc.append(IndexName.MATCH_MPLS_LABEL, fi.getMatchMplsLabel());
+                    break;
+                case MATCH_SCTP_SRC:
+                    doc.append(IndexName.MATCH_SCTP_SRC, fi.getMatchSctpSrc());
+                    break;
+                case MATCH_SCTP_DST:
+                    doc.append(IndexName.MATCH_SCTP_DST, fi.getMatchSctpDst());
+                    break;
+                case MATCH_ICMPv4_CODE:
+                    doc.append(IndexName.MATCH_ICMPV4_CODE, fi.getMatchIcmpv4Code());
+                    break;
+                case MATCH_ICMPV4_TYPE:
+                    doc.append(IndexName.MATCH_ICMPV4_TYPE, fi.getMatchIcmpv4Type());
+                    break;
+                case MATCH_IPV6_SRC:
+                    doc.append(IndexName.MATCH_IPV6_SRC, fi.getMatchIpv6Src());
+                    break;
+                case MATCH_IPV6_SRC_MASK:
+                    doc.append(IndexName.MATCH_IPV6_SRC_MASK, fi.getMatchIpv6SrcMask());
+                    break;
+                case MATCH_IPV6_DST:
+                    doc.append(IndexName.MATCH_IPV6_DST, fi.getMatchIpv6Dst());
+                    break;
+                case MATCH_IPV6_DST_MASK:
+                    doc.append(IndexName.MATCH_IPV6_DST_MASK, fi.getMatchIpv6DstMask());
+                    break;
+                case MATCH_ICMPV6_CODE:
+                    doc.append(IndexName.MATCH_ICMPV6_CODE, fi.getMatchIcmpv6Code());
+                    break;
+                case MATCH_ICMPV6_TYPE:
+                    doc.append(IndexName.MATCH_ICMPV6_TYPE, fi.getMatchIcmpv6Type());
+                    break;
+                case MATCH_IPV6_ND_SLL:
+                    doc.append(IndexName.MATCH_IPV6_ND_SLL, fi.getMatchIpv6NdSll());
+                    break;
+                case MATCH_IPV6_ND_TARGET:
+                    doc.append(IndexName.MATCH_IPV6_ND_TARGET, fi.getMatchIpv6NdTarget());
+                    break;
+                case MATCH_IPV6_ND_TLL:
+                    doc.append(IndexName.MATCH_IPV6_ND_TLL, fi.getMatchIpv6NdTll());
+                    break;
+                case MATCH_IPV6_EXTHDR:
+                    doc.append(IndexName.MATCH_IPV6_EXTHDR, fi);
+                    break;
+                default:
+                    log.warn("[extractIndexfromFeature] not supported type :{}", field);
+                    break;
+
+            }
+        }
+        return doc;
+    }
+
+    private Document extractPayloadMatchfromFeature(FeatureIndex fi) {
+        Document doc = new Document();
+        FeatureIndexField field;
+
+        for (int i = 0; i < fi.getFeatureList().size(); i++) {
+            field = fi.getFeatureList().get(i);
+
+            switch (field) {
+                case MATCH_ETH_DST:
+                    doc.append(FeatureName.PACKET_IN_MATCH_ETH_DST, fi.getMatchEthDst());
+                    break;
+                case MATCH_ETH_SRC:
+                    doc.append(FeatureName.PACKET_IN_MATCH_ETH_SRC, fi.getMatchEthSrc());
+                    break;
+                case MATCH_ETH_TYPE:
+                    doc.append(FeatureName.PACKET_IN_MATCH_ETH_TYPE, fi.getMatchEthType());
+                    break;
+                case MATCH_VLAN_VID:
+                    doc.append(FeatureName.PACKET_IN_MATCH_VLAN_VID, fi.getMatchVlanVid());
+                    break;
+                case MATCH_IP_DSCP:
+                    doc.append(FeatureName.PACKET_IN_MATCH_IP_DSCP, fi.getMatchIpDscp());
+                    break;
+                case MATCH_IP_ECN:
+                    doc.append(FeatureName.PACKET_IN_MATCH_IP_ECN, fi.getMatchIpEcn());
+                    break;
+                case MATCH_IP_PROTO:
+                    doc.append(FeatureName.PACKET_IN_MATCH_IP_PROTO, fi.getMatchIpProto());
+                    break;
+                case MATCH_IPV4_SRC:
+                    doc.append(FeatureName.PACKET_IN_MATCH_IPV4_SRC, fi.getMatchIpv4Src());
+                    break;
+                case MATCH_IPV4_DST:
+                    doc.append(FeatureName.PACKET_IN_MATCH_IPV4_DST, fi.getMatchIpv4Dst());
+                    break;
+                case MATCH_TCP_SRC:
+                    doc.append(FeatureName.PACKET_IN_MATCH_TCP_SRC, fi.getMatchTcpSrc());
+                    break;
+                case MATCH_TCP_DST:
+                    doc.append(FeatureName.PACKET_IN_MATCH_TCP_DST, fi.getMatchTcpDst());
+                    break;
+                case MATCH_UDP_SRC:
+                    doc.append(FeatureName.PACKET_IN_MATCH_UDP_SRC, fi.getMatchUdpSrc());
+                    break;
+                case MATCH_UDP_DST:
+                    doc.append(FeatureName.PACKET_IN_MATCH_UDP_DST, fi.getMatchUdpDst());
+                    break;
+                case MATCH_ICMPv4_CODE:
+                    doc.append(FeatureName.PACKET_IN_MATCH_ICMPV4_CODE, fi.getMatchIcmpv4Code());
+                    break;
+                case MATCH_ICMPV4_TYPE:
+                    doc.append(FeatureName.PACKET_IN_MATCH_ICMPV4_TYPE, fi.getMatchIcmpv4Type());
+                    break;
+                case MATCH_IPV6_SRC:
+                    doc.append(FeatureName.PACKET_IN_MATCH_IPV6_SRC, fi.getMatchIpv6Src());
+                    break;
+                case MATCH_IPV6_SRC_MASK:
+                    doc.append(FeatureName.PACKET_IN_MATCH_IPV6_DST, fi.getMatchIpv6SrcMask());
+                    break;
+                case MATCH_IPV6_DST:
+                    doc.append(FeatureName.PACKET_IN_MATCH_IPV6_DST, fi.getMatchIpv6Dst());
+                    break;
+                case MATCH_ICMPV6_CODE:
+                    doc.append(FeatureName.PACKET_IN_MATCH_ICMPV6_CODE, fi.getMatchIcmpv6Code());
+                    break;
+                case MATCH_ICMPV6_TYPE:
+                    doc.append(FeatureName.PACKET_IN_MATCH_ICMPV6_TYPE, fi.getMatchIcmpv6Type());
+                    break;
+                default:
+                    log.info("[extractPayloadMatchfromFeature] not supported type :{} ", field);
+                    return null;
+
+            }
+        }
+        return doc;
+    }
+
+
+    public Document storeErrorMsg(FeatureType featureType,
+                                  FeatureCategory featureCategory,
+                                  ErrorMessageFeature feature) {
+        Document unitInsertedDoc = null;
+        try {
+            FeatureIndex fi = feature.getFeatureindex();
+            UnitErrorMessageInformation uemi =
+                    feature.getUnitErrorMessageInformation();
+
+            if (fi == null || uemi == null) {
+                return null;
+            }
+            unitInsertedDoc = extractIndexfromFeature(fi);
+
+            unitInsertedDoc.append(IndexName.TIMESTAMP, uemi.getTimestamp())
+                    .append(IndexName.FEATURE_TYPE, featureType.ordinal())
+                    .append(IndexName.FEATURE_CATEGORY, featureCategory.ordinal());
+
+            Document unitInsertedfeature = new Document()
+                    .append(FeatureName.ERROR_MSG_ERRTYPE, uemi.getErrType());
+
+            unitInsertedDoc.append(FeatureName.FEATURE, unitInsertedfeature);
+            dbCollection.insertOne(unitInsertedDoc);
+
+            log.info("insert successful : {}", featureCategory.toString());
+        } catch (Exception e) {
+            log.warn("DB Insertion failed (ErrorMsg) :" + e.getMessage().toString());
+            return null;
+        }
+
+        return unitInsertedDoc;
+    }
+
+    private Document storeFlowRemoved(FeatureType featureType,
+                                      FeatureCategory featureCategory,
+                                      FlowRemovedFeature feature) {
+        Document unitInsertedDoc = null;
+        try {
+            FeatureIndex fi = feature.getFeatureindex();
+            UnitFlowRemovedInformation ufri =
+                    feature.getUnitFlowRemovedInformation();
+
+            if (fi == null || ufri == null) {
+                return null;
+            }
+            unitInsertedDoc = extractIndexfromFeature(fi);
+
+            unitInsertedDoc.append(IndexName.TIMESTAMP, ufri.getTimestamp())
+                    .append(IndexName.FEATURE_TYPE, featureType.ordinal())
+                    .append(IndexName.FEATURE_CATEGORY, featureCategory.ordinal());
+
+            Document unitInsertedfeature = new Document()
+                    .append(FeatureName.FLOW_REMOVED_REASON, ufri.getReason())
+                    .append(FeatureName.FLOW_REMOVED_DURATION_SECOND, ufri.getDurationSec())
+                    .append(FeatureName.FLOW_REMOVED_DURATION_N_SECOND, ufri.getDurationNsec())
+                    .append(FeatureName.FLOW_REMOVED_IDLE_TIMEOUT, ufri.getIdleTimeout())
+                    .append(FeatureName.FLOW_REMOVED_HARD_TIMEOUT, ufri.getHardTimeout())
+                    .append(FeatureName.FLOW_REMOVED_PACKET_COUNT, ufri.getPacketCount())
+                    .append(FeatureName.FLOW_REMOVED_BYTE_COUNT, ufri.getByteCount());
+
+            unitInsertedDoc.append(FeatureName.FEATURE, unitInsertedfeature);
+            dbCollection.insertOne(unitInsertedDoc);
+
+            log.info("insert successful : {}", featureCategory.toString());
+        } catch (Exception e) {
+            log.warn("DB Insertion failed (FlowRemoved):" + e.getMessage().toString());
+        }
+
+        return unitInsertedDoc;
+    }
+
+    private Document storePacketIn(FeatureType featureType,
+                                   FeatureCategory featureCategory,
+                                   PacketInFeature feature) {
+        Document unitInsertedDoc = null;
+        try {
+            FeatureIndex fi = feature.getFeatureindex();
+            UnitPacketInInformation upii =
+                    feature.getUnitPacketInInformation();
+
+            if (fi == null || upii == null) {
+                return null;
+            }
+            unitInsertedDoc = extractIndexfromFeature(fi);
+
+            unitInsertedDoc.append(IndexName.TIMESTAMP, upii.getTimestamp())
+                    .append(IndexName.FEATURE_TYPE, featureType.ordinal())
+                    .append(IndexName.FEATURE_CATEGORY, featureCategory.ordinal());
+
+            Document payloadMatch = extractPayloadMatchfromFeature(upii.getPayloadMatch());
+
+            if(payloadMatch == null){
+                return null;
+            }
+
+            Document unitInsertedfeature = new Document()
+                    .append(FeatureName.PACKET_IN_TOTAL_LEN, upii.getTotalLen())
+                    .append(FeatureName.PACKET_IN_REASON, upii.getReason())
+                    .append(FeatureName.PACKET_IN_IN_PORT, upii.getInPort())
+                    .append(FeatureName.PACKET_IN_IN_PHY_PORT, upii.getInPhyPort());
+
+            unitInsertedDoc.append(FeatureName.FEATURE, unitInsertedfeature)
+                    .append(FeatureName.PACKET_IN_PAYLOAD_MATCH, payloadMatch);
+            dbCollection.insertOne(unitInsertedDoc);
+
+
+            log.info("insert successful : {}", featureCategory.toString());
+        } catch (Exception e) {
+            log.warn("DB Insertion failed (PacketIn):" + e.getMessage().toString());
+        }
+        return unitInsertedDoc;
+    }
+
+    private Document storePortStatus(FeatureType featureType,
+                                     FeatureCategory featureCategory,
+                                     PortStatusFeature feature) {
+        Document unitInsertedDoc = null;
+        try {
+            FeatureIndex fi = feature.getFeatureindex();
+            UnitPortStatusInformation upsi =
+                    feature.getUnitPortStatusInformation();
+
+            if (fi == null || upsi == null) {
+                return null;
+            }
+            unitInsertedDoc = extractIndexfromFeature(fi);
+
+            unitInsertedDoc.append(IndexName.TIMESTAMP, upsi.getTimestamp())
+                    .append(IndexName.FEATURE_TYPE, featureType.ordinal())
+                    .append(IndexName.FEATURE_CATEGORY, featureCategory.ordinal());
+
+            Document unitInsertedfeature = new Document()
+                    .append(FeatureName.PORT_STATUS_REASON, upsi.getReason());
+
+            unitInsertedDoc.append(FeatureName.FEATURE, unitInsertedfeature);
+            dbCollection.insertOne(unitInsertedDoc);
+
+
+            log.info("insert successful : {}", featureCategory.toString());
+        } catch (Exception e) {
+            log.warn("DB Insertion failed (PortStatus):" + e.getMessage().toString());
+        }
+        return unitInsertedDoc;
+    }
+
+    private List<Document> storeFlowStats(FeatureType featureType,
+                                          FeatureCategory featureCategory,
+                                          FlowStatisticsFeature feature) {
+        List<Document> insertedDocument = null;
+        try {
+            insertedDocument = new ArrayList<>();
+            int i = 0;
+            while (true) {
+                FeatureIndex fi = feature.getFeatureIndex(i);
+                UnitFlowStatistics ufs =
+                        feature.getUnitFlowStatistics(i);
+
+                if (fi == null || ufs == null) {
+                    break;
+                }
+                Document unitInsertedDoc = extractIndexfromFeature(fi);
+
+                unitInsertedDoc.append(IndexName.TIMESTAMP, ufs.getTimestamp())
+                        .append(IndexName.FEATURE_TYPE, featureType.ordinal())
+                        .append(IndexName.FEATURE_CATEGORY, featureCategory.ordinal());
+
+                Document unitInsertedfeature = new Document()
+                        .append(FeatureName.FLOW_STATS_DURATION_SEC, ufs.getDurationSec())
+                        .append(FeatureName.FLOW_STATS_DURATION_N_SEC, ufs.getDurationNsec())
+                        .append(FeatureName.FLOW_STATS_PRIORITY, ufs.getPriority())
+                        .append(FeatureName.FLOW_STATS_IDLE_TIMEOUT, ufs.getIdleTimeout())
+                        .append(FeatureName.FLOW_STATS_HARD_TIMEOUT, ufs.getHardTimeout())
+                        .append(FeatureName.FLOW_STATS_PACKET_COUNT, ufs.getPacketCount())
+                        .append(FeatureName.FLOW_STATS_BYTE_COUNT, ufs.getByteCount());
+
+                unitInsertedDoc.append(FeatureName.FEATURE, unitInsertedfeature);
+                insertedDocument.add(unitInsertedDoc);
+                i++;
+            }
+
+            if (insertedDocument.size() == 0) {
+                return null;
+            }
+
+            dbCollection.insertMany(insertedDocument);
+
+            log.info("insert successful : {}", featureCategory.toString());
+        } catch (Exception e) {
+            log.warn("DB Insertion failed (FlowStats):" + e.getMessage().toString());
+        }
+        return insertedDocument;
+    }
+
+    private List<Document> storeQueueStats(FeatureType featureType,
+                                           FeatureCategory featureCategory,
+                                           QueueStatisticsFeature feature) {
+        List<Document> insertedDocument = null;
+        try {
+            insertedDocument = new ArrayList<>();
+            int i = 0;
+            while (true) {
+                FeatureIndex fi = feature.getFeatureIndex(i);
+                UnitQueueStatistics uqs =
+                        feature.getUnitQueueStatistics(i);
+
+                if (fi == null || uqs == null) {
+                    break;
+                }
+                Document unitInsertedDoc = extractIndexfromFeature(fi);
+
+                unitInsertedDoc.append(IndexName.TIMESTAMP, uqs.getTimestamp())
+                        .append(IndexName.FEATURE_TYPE, featureType.ordinal())
+                        .append(IndexName.FEATURE_CATEGORY, featureCategory.ordinal());
+
+                Document unitInsertedfeature = new Document()
+                        .append(FeatureName.QUEUE_STATS_TX_BYTES, uqs.getTxBytes())
+                        .append(FeatureName.QUEUE_STATS_TX_PACKETS, uqs.getTxPackets())
+                        .append(FeatureName.QUEUE_STATS_TX_ERRORS, uqs.getTxErrors());
+
+                unitInsertedDoc.append(FeatureName.FEATURE, unitInsertedfeature);
+                insertedDocument.add(unitInsertedDoc);
+                i++;
+            }
+
+            if (insertedDocument.size() == 0) {
+                return null;
+            }
+
+            dbCollection.insertMany(insertedDocument);
+
+
+            log.info("insert successful : {}", featureCategory.toString());
+        } catch (Exception e) {
+            log.warn("DB Insertion failed (QueueStats):" + e.getMessage().toString());
+        }
+
+        return insertedDocument;
+    }
+
+    private List<Document> storeTabletats(FeatureType featureType,
+                                          FeatureCategory featureCategory,
+                                          TableStatisticsFeature feature) {
+        List<Document> insertedDocument = null;
+        try {
+            insertedDocument = new ArrayList<>();
+            int i = 0;
+            while (true) {
+                FeatureIndex fi = feature.getFeatureIndex(i);
+                UnitTableStatistics uts =
+                        feature.getUnitTableStatistics(i);
+
+                if (fi == null || uts == null) {
+                    break;
+                }
+                Document unitInsertedDoc = extractIndexfromFeature(fi);
+
+                unitInsertedDoc.append(IndexName.TIMESTAMP, uts.getTimestamp())
+                        .append(IndexName.FEATURE_TYPE, featureType.ordinal())
+                        .append(IndexName.FEATURE_CATEGORY, featureCategory.ordinal());
+
+                Document unitInsertedfeature = new Document()
+                        .append(FeatureName.TABLE_STATS_MAX_ENTIRES, uts.getMaxEntries())
+                        .append(FeatureName.TABLE_STATS_ACTIVE_COUNT, uts.getActiveCount())
+                        .append(FeatureName.TABLE_STATS_LOOKUP_COUNT, uts.getLookupCount())
+                        .append(FeatureName.TABLE_STATS_MATCHED_COUNT, uts.getMatchedCount());
+
+                unitInsertedDoc.append(FeatureName.FEATURE, unitInsertedfeature);
+                insertedDocument.add(unitInsertedDoc);
+                i++;
+            }
+
+            if (insertedDocument.size() == 0) {
+                return null;
+            }
+
+            dbCollection.insertMany(insertedDocument);
+
+
+            log.info("insert successful : {}", featureCategory.toString());
+        } catch (Exception e) {
+            log.warn("DB Insertion failed (TableStats):" + e.getMessage().toString());
+        }
+        return insertedDocument;
+    }
+
+
+    private List<Document> storeAggregateStats(FeatureType featureType,
+                                               FeatureCategory featureCategory,
+                                               AggregateStatisticsFeature feature) {
+        List<Document> insertedDocument = null;
+        try {
+            insertedDocument = new ArrayList<>();
+            int i = 0;
+            while (true) {
+                FeatureIndex fi =
+                        feature.getFeatureIndex(i);
+                UnitAggregateStatistics uas =
+                        feature.getUnitAggregateStatistics(i);
+
+                if (fi == null || uas == null) {
+                    break;
+                }
+                Document unitInsertedDoc = extractIndexfromFeature(fi);
+
+                unitInsertedDoc.append(IndexName.TIMESTAMP, uas.getTimestamp())
+                        .append(IndexName.FEATURE_TYPE, featureType.ordinal())
+                        .append(IndexName.FEATURE_CATEGORY, featureCategory.ordinal());
+
+                Document unitInsertedfeature = new Document()
+                        .append(FeatureName.AGGREGATE_STATS_PACKET_COUNT, uas.getPacketCount())
+                        .append(FeatureName.AGGREGATE_STATS_BYTE_COUNT, uas.getByteCount())
+                        .append(FeatureName.AGGREGATE_STATS_FLOW_COUNT, uas.getFlowCount());
+
+                unitInsertedDoc.append(FeatureName.FEATURE, unitInsertedfeature);
+                insertedDocument.add(unitInsertedDoc);
+                i++;
+            }
+
+            if (insertedDocument.size() == 0) {
+                return null;
+            }
+
+            dbCollection.insertMany(insertedDocument);
+
+
+            log.info("insert successful : {}", featureCategory.toString());
+        } catch (Exception e) {
+            log.warn("DB Insertion failed (AggregateStats):" + e.getMessage().toString());
+        }
+        return insertedDocument;
+    }
+
+
+    private List<Document> storePortStats(FeatureType featureType,
+                                          FeatureCategory featureCategory,
+                                          PortStatisticsFeature feature) {
+        List<Document> insertedDocument = null;
+        try {
+            insertedDocument = new ArrayList<>();
+            int i = 0;
+            while (true) {
+                FeatureIndex fi = feature.getFeatureIndex(i);
+                UnitPortStatistics ups = feature.getUnitPortStatistics(i);
+
+                if (fi == null || ups == null) {
+                    break;
+                }
+                Document unitInsertedDoc = extractIndexfromFeature(fi);
+
+                unitInsertedDoc.append(IndexName.TIMESTAMP, ups.getTimestamp())
+                        .append(IndexName.FEATURE_TYPE, featureType.ordinal())
+                        .append(IndexName.FEATURE_CATEGORY, featureCategory.ordinal());
+
+                Document unitInsertedfeature = new Document()
+                        .append(FeatureName.PORT_STATS_RX_PACKETS, ups.getRxPackets())
+                        .append(FeatureName.PORT_STATS_TX_PACKETS, ups.getTxPackets())
+                        .append(FeatureName.PORT_STATS_RX_BYTES, ups.getRxBytes())
+                        .append(FeatureName.PORT_STATS_TX_BYTES, ups.getTxBytes())
+                        .append(FeatureName.PORT_STATS_RX_DROPPED, ups.getRxDropped())
+                        .append(FeatureName.PORT_STATS_TX_DROPPED, ups.getTxDropped())
+                        .append(FeatureName.PORT_STATS_RX_ERRORS, ups.getRxErrors())
+                        .append(FeatureName.PORT_STATS_TX_ERRORS, ups.getTxErrors())
+                        .append(FeatureName.PORT_STATS_RX_FRAME_ERROR, ups.getRxFrameErr())
+                        .append(FeatureName.PORT_STATS_RX_OVER_ERROR, ups.getRxOverErr())
+                        .append(FeatureName.PORT_STATS_RX_CRC_ERROR, ups.getRxCrcErr())
+                        .append(FeatureName.PORT_STATS_COLLISIONS, ups.getCollisions());
+
+                unitInsertedDoc.append(FeatureName.FEATURE, unitInsertedfeature);
+                insertedDocument.add(unitInsertedDoc);
+                i++;
+            }
+
+            if (insertedDocument.size() == 0) {
+                return null;
+            }
+
+            dbCollection.insertMany(insertedDocument);
+
+
+            log.info("insert successful : {}", featureCategory.toString());
+        } catch (Exception e) {
+            log.warn("DB Insertion failed (PortStats):" + e.getMessage().toString());
+        }
+        return insertedDocument;
+
+    }
+
+
+}

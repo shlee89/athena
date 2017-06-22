@@ -1,0 +1,2 @@
+AthenaModel.KMeansDetectionModel (20111119-DDoS.mongoBackup)
+    - Created in 20161119 from 20111119-DDoS.mongoBackup dataset (KAIST NSS testing environment)

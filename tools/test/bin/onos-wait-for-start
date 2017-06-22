@@ -1,0 +1,28 @@
+#!/bin/bash
+# -----------------------------------------------------------------------------
+# Waits for ONOS to reach run-level 100 on the specified remote node.
+# -----------------------------------------------------------------------------
+
+[ ! -d "$ONOS_ROOT" ] && echo "ONOS_ROOT is not defined" >&2 && exit 1
+. $ONOS_ROOT/tools/build/envDefaults
+. $ONOS_ROOT/tools/test/bin/find-node.sh
+
+node=$(find_node ${1:-$OCI})
+
+remote=$ONOS_USER@$node
+
+ssh -t $remote "
+    # Wait until we reach the run-level 100
+    for i in \$(seq 1 45); do
+        $ONOS_INSTALL_DIR/bin/onos bundle:list 2>/dev/null | \
+            grep -q 'START LEVEL 100' && break || sleep 2
+    done
+
+    # Wait until ApplicationManager is available
+    for i in \$(seq 1 10); do
+        grep -q \" ApplicationManager .* Started\" \
+            $ONOS_INSTALL_DIR/log/karaf.log && break || sleep 1
+    done
+
+    grep -q \" ApplicationManager .* Started\" $ONOS_INSTALL_DIR/log/karaf.log
+"

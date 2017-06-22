@@ -1,0 +1,15 @@
+{
+  "comments": [
+    "Stepping through link events"
+  ],
+  "title": "Process Link Events Scenario",
+  "params": {
+    "lastAuto": 13
+  },
+  "description": [
+    "Press 'H' to show hosts.",
+    "",
+    "Press '=' to load initial events.",
+    "Press '-' to fire further events."
+  ]
+}

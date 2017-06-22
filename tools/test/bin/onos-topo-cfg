@@ -1,0 +1,17 @@
+#!/bin/bash
+# -----------------------------------------------------------------------------
+# ONOS topology configuration uploader.
+# -----------------------------------------------------------------------------
+
+[ ! -d "$ONOS_ROOT" ] && echo "ONOS_ROOT is not defined" >&2 && exit 1
+. $ONOS_ROOT/tools/build/envDefaults
+
+echo "This facility has been deprecated and will be removed in 1.6.0 (Goldeneye) release!!!"
+
+node="${1:-$OCI}"
+file="${2:-$ONOS_ROOT/tools/test/topos/oe-linear-3.json}"
+url="${3:-config/topology}"
+
+curl -sS --fail -L --user $ONOS_WEB_USER:$ONOS_WEB_PASS \
+    -X POST -H 'Content-Type:application/json' \
+    http://$node:8181/onos/v1/${url} -d@$file

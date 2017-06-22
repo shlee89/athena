@@ -1,0 +1,42 @@
+#!/bin/bash
+# -----------------------------------------------------------------------------
+# ONOS remote command-line client.
+# -----------------------------------------------------------------------------
+
+function _usage () {
+cat << _EOF_
+usage:
+ $(basename $0) [-w] [node]
+
+flags:
+- -w : Waits for ONOS instance to reach run-level 100, i.e. to be fully started.
+
+options:
+- [node] : the node to attach to
+
+summary:
+ ONOS remote command-line client.
+
+ The -w flag depends on 'onos-wait-for-start'. If [node] is unspecified, \$OCI
+ is used.
+
+_EOF_
+}
+[ "$1" = "-h" ] && _usage && exit 0
+
+[ ! -d "$ONOS_ROOT" ] && echo "ONOS_ROOT is not defined" >&2 && exit 1
+. $ONOS_ROOT/tools/build/envDefaults
+. $ONOS_ROOT/tools/test/bin/find-node.sh
+
+[ "$1" = "-w" ] && shift && onos-wait-for-start $1
+
+[ -n "$1" ] && OCI=$(find_node $1) && shift
+
+if which client 1>/dev/null 2>&1 && [ -z "$ONOS_USE_SSH" ]; then
+    # Use Karaf client only if we can and are allowed to
+    unset KARAF_HOME
+    client -h $OCI -u karaf "$@" 2>/dev/null
+else
+    # Otherwise use raw ssh; strict checking is off for dev environments only
+    ssh -p 8101 -o StrictHostKeyChecking=no $OCI "$@"
+fi

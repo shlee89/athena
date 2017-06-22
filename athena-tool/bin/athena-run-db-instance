@@ -1,0 +1,28 @@
+#!/bin/bash
+#
+# Script to setup for an individual MongoDB instance
+# DO not use in the Single Mode
+# by Jinwoo Kim
+
+MONGO_DIR=`find $(pwd)/ -type d | grep mongodb-linux-x86_64-3.2.1/bin`
+echo $MONGO_DIR
+
+if [ ! -d "$MONGO_DIR" ]; then
+    echo "no directory"
+    mkdir ~/Applications
+    mkdir ~/Downloads; cd ~/Downloads;
+    wget https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-3.2.1.tgz -q
+    tar -zxvf mongodb-linux-x86_64-3.2.1.tgz -C ~/Applications/
+    mkdir -p ~/data/db
+fi
+
+MD1=$1
+MD2=$2
+MD3=$3
+
+echo "var config={_id:'rs0', members:[{_id:0, host:'$MD1', priority:1}, {_id:1, host:'$MD2', priority:0.5}, {_id:2, host:'$MD3', priority:0.5}]};
+config;
+rs.initiate(config);
+rs.status();" > config.js
+
+$MONGO_DIR/mongo < config.js

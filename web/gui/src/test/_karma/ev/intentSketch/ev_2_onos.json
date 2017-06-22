@@ -1,0 +1,18 @@
+{
+  "event": "showTraffic",
+  "sid": 1,
+  "payload": {
+    "paths": [
+      {
+        "intentId": "0x1234",
+        "links": [ "1-2", "2-3" ],
+        "class": "primary"
+      },
+      {
+        "intentId": "0x4321",
+        "links": [ "5-6", "6-7" ],
+        "class": "secondary"
+      }
+    ]
+  }
+}

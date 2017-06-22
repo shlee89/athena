@@ -1,0 +1,68 @@
+#!/bin/bash
+#
+# Script to install Athena dependencies on Ubuntu 14.04
+# several code have been borrowed from ONOS script
+# by Jinwoo Kim
+
+#download & install ONOS
+USERNAME=ubuntu
+source $ATHENA_ROOT/athena-tool/config/athena-config-env-distributed
+
+# get ONOS IP addresses
+MDIS=$(env | grep OC[0-9] | cut -d= -f2)
+IFS=' ' read -r -a LIST <<< $MDIS
+
+if [ -z "$LIST" ]; then
+  printf "error: no ONOS instances configured, quitting early\n" >&2 && exit 0
+fi
+
+len=${#LIST[@]}
+
+# install ONOS dependencies
+printf "starting ONOS instances as distributed mode...\n"
+for NODE in ${LIST[@]}; do
+    echo $NODE
+    ssh -tt $USERNAME@$NODE "
+        echo debconf shared/accepted-oracle-license-v1-1 select true | sudo debconf-set-selections
+        echo debconf shared/accepted-oracle-license-v1-1 seen true | sudo debconf-set-selections
+        sudo apt-get install software-properties-common -y
+        sudo add-apt-repository ppa:webupd8team/java -y
+        sudo apt-get update && sudo apt-get install oracle-java8-installer oracle-java8-set-default wget -y
+        export JAVA_HOME=/usr/lib/jvm/java-8-oracle
+    "
+done
+
+# install MongoDB dependencies
+MDIS=$(env | grep MD[0-9] | cut -d= -f2)
+IFS=' ' read -r -a LIST <<< $MDIS
+if [ -z "$LIST" ]; then
+  printf "error: no MongoDB instances configured, quitting early\n" >&2 && exit 0
+fi
+for NODE in ${LIST[@]}; do
+    echo $NODE
+    ssh -tt $USERNAME@$NODE "
+        mkdir ~/Applications
+        mkdir ~/Downloads; cd ~/Downloads;
+        sudo apt-get install wget -y
+        wget https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-3.2.1.tgz -q
+        tar -zxvf mongodb-linux-x86_64-3.2.1.tgz -C ~/Applications/
+        mkdir -p data/db
+    "
+done
+
+# install Spark dependencies
+MDIS=$(env | grep SP[0-9] | cut -d= -f2)
+IFS=' ' read -r -a LIST <<< $MDIS
+if [ -z "$LIST" ]; then
+  printf "error: no Spark instances configured, quitting early\n" >&2 && exit 0
+fi
+for NODE in ${LIST[@]}; do
+    echo $NODE
+    ssh -tt $USERNAME@$NODE "
+        mkdir ~/Applications
+        mkdir ~/Downloads; cd ~/Downloads;
+        sudo apt-get install wget -y
+        wget http://d3kbcqa49mib13.cloudfront.net/spark-1.6.1-bin-hadoop2.6.tgz
+        tar -zxvf spark-1.6.1-bin-hadoop2.6.tgz -C ~/Applications/
+    "
+done

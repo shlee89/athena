@@ -1,0 +1,21 @@
+{
+  "priority":1,
+  "isPermanent":"false",
+  "timeout":1,
+  "deviceId":"of:0000000000000001",
+  "tableId": 1,
+  "selector":
+  {"criteria":
+  [
+    {"type":"OCH_SIGID",
+      "ochSignalId":
+      {
+        "gridType":"CWDM",
+        "channelSpacing":"CHL_25GHZ",
+        "spacingMultiplier":3,
+        "slotGranularity":4
+      }
+    }
+  ]
+  }
+}

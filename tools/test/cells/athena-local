@@ -1,0 +1,13 @@
+# LXC-based multi ONOS instance & LINC-OE mininet box
+export ONOS_NIC="172.16.174.*"
+I=1
+for CONTAINER in $( sudo lxc-ls ); do
+ IP=`sudo lxc-ls --fancy -F ipv4 $CONTAINER | tail -1`
+ export OC${I}=${IP}
+ let I=I+1
+done
+export OCI=$OC1
+export OCN="172.16.174.158"
+export ONOS_APPS="drivers,openflow,proxyarp,optical,bgprouter,framework,athenaproxy"
+export ONOS_USER=ubuntu
+export ONOS_GROUP=ubuntu

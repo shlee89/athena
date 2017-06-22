@@ -1,0 +1,14 @@
+{
+  "comments": [
+    "Stepping through showTraffic",
+    "NOTE: showTraffic event is deprecated",
+    "      This needs to be re-worked to use showHighlights"
+  ],
+  "title": "Show Traffic Scenario",
+  "params": {
+    "lastAuto": 15
+  },
+  "description": [
+    "Primary, secondary and animated link visualizations."
+  ]
+}

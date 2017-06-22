@@ -1,0 +1,10 @@
+# Script for running athena application
+# How to run? after onos-install $OC1 ... $OC3, then onos-run-athena (Run athena on all instances)
+export ONOS_NIC="172.16.174.*"
+I=1
+for CONTAINER in $( sudo lxc-ls ); do
+ IP=`sudo lxc-ls --fancy -F ipv4 $CONTAINER | tail -1`
+ export OC${I}=${IP}
+ let I=I+1
+ ssh ubuntu@${IP} 'bash -s' < $ONOS_ROOT/tools/test/bin/athena_application.sh
+done

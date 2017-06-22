@@ -1,0 +1,5 @@
+#!/bin/bash
+SPARK_DIR=`sudo find ~ -type d | grep spark-1.6.1-bin-hadoop2.6/bin`
+echo $SPARK_DIR
+source $ATHENA_ROOT/athena-tool/config/athena-config-env
+$SPARK_DIR/spark-submit --class "athena.user.application.Main" --master spark://$MD1:7077 $ATHENA_ROOT/athena-tester/target/athena-tester-1.6.0.jar

@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2014 Open Networking Laboratory
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.onosproject</groupId>
+        <artifactId>onos-core</artifactId>
+        <version>1.6.0</version>
+    </parent>
+
+    <artifactId>onos-core-framework</artifactId>
+    <packaging>bundle</packaging>
+
+    <description>ONOS network framework subsystems</description>
+
+    <dependencies>
+
+        <!-- cassandra version up : 2.2.0 -->
+<!--         <dependency> -->
+<!--             <groupId>com.datastax.cassandra</groupId> -->
+<!--             <artifactId>cassandra-driver-core</artifactId> -->
+<!--             <version>2.2.0-rc1</version> -->
+<!--         </dependency> -->
+        <!-- json library for cassandra -->
+<!--         <dependency> -->
+<!-- 	        <groupId>com.googlecode.json-simple</groupId> -->
+<!-- 	        <artifactId>json-simple</artifactId> -->
+<!-- 	        <version>1.1.1</version> -->
+<!--         </dependency> -->
+
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongo-java-driver</artifactId>
+            <version>3.2.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>bson</artifactId>
+            <version>3.2.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.onosproject</groupId>
+            <artifactId>onos-core-dist</artifactId>
+            <version>1.6.0</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>org.onosproject</groupId>
+            <artifactId>onos-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.felix</groupId>
+            <artifactId>org.apache.felix.scr.annotations</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.karaf.features</groupId>
+            <artifactId>org.apache.karaf.features.core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.karaf.system</groupId>
+            <artifactId>org.apache.karaf.system.core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-scr-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <useFile>false</useFile>
+                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <instructions>
+                        <Import-Package>
+                            org.apache.felix.*,
+                            org.onosproject.*,
+                            org.slf4j.*,
+                            java.nio.*,
+                            com.google.*,
+                            com.mongodb.*,
+                            org.bson.*,
+                            weka.*,
+                            java.util.*,
+                            javax.*,
+                            moa.*,
+<!--                             com.datastax.driver.core.*, -->
+                            io.netty.*
+<!--                             com.codahale.*, -->
+<!--                             com.googlecode.json-simple.* -->
+                        </Import-Package>
+                        <Embed-Dependency>
+                            weka-dev,
+                            moa,
+                            mongo-java-driver
+<!--                             cassandra-driver-core, -->
+<!--                             json-simple -->
+                        </Embed-Dependency>
+                        <Embed-Transitive>true</Embed-Transitive>
+                    </instructions>
+                </configuration>
+            </plugin>
+
+
+        </plugins>
+    </build>
+
+</project>

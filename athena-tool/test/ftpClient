@@ -1,0 +1,7 @@
+#!/bin/bash
+#client.sh
+#sudo apt-get install python-pip -y && sudo pip install pyftpdlib
+while (true); do
+	wget -O- --limit-rate 2M ftp://$1:21/data/1G > /dev/null
+        sleep 1
+done

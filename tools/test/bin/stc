@@ -1,0 +1,37 @@
+#!/bin/bash
+#-------------------------------------------------------------------------------
+#   System Test Coordinator
+#-------------------------------------------------------------------------------
+
+VER=${STC_VERSION:-2.0}
+JAR=~/.m2/repository/org/onosproject/onos-stc/$VER/onos-stc-$VER.jar
+SCENARIOS=$ONOS_ROOT/tools/test/scenarios
+
+# Download the STC binary if needed
+if [ ! -f $JAR ]; then
+    printf "Downloading STC binary..."
+    aux=/tmp/stc-$$.log
+    mvn dependency:get -Dartifact=org.onosproject:onos-stc:$VER -Dtransitive=false -B >$aux || fgrep '[ERROR]' $aux
+    rm -f $aux
+    [ -f $JAR ] && printf "Done.\n"
+fi
+
+DEBUG_OPTS="-agentlib:jdwp=transport=dt_socket,address=5005,server=y,suspend=y"
+
+scenario=${1:-smoke}
+
+[ ! -f $scenario ] && scenario=$SCENARIOS/$scenario
+[ ! -f $scenario ] && scenario=$scenario.xml
+[ ! -f $scenario ] && echo "Scenario $scenario file not found" && exit 1
+
+# Remove the test name from the list of parameters, if one is specified
+[ $# -ge 1 ] && shift
+
+# If stcColor is not set, we will enable color if this is an interactive session
+[ -t 1 ] && interactive=true || interactive=false
+[ -t 1 ] && notInteractive=false || notInteractive=true
+
+# Run stc
+[ -z "$stcDebug" ] && DEBUG_OPTS=""
+stcColor=${stcColor:-$interactive} stcDumpLogs=${stcDumpLogs:-$notInteractive} \
+    java $DEBUG_OPTS -jar $JAR $scenario "$@"

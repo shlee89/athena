@@ -1,0 +1,14 @@
+#!/bin/bash
+# -----------------------------------------------------------------------------
+# Launches ONOS REST API docs GUI on the specified node.
+# -----------------------------------------------------------------------------
+
+host=${1:-$OCI}
+host=${host:-localhost}
+
+unamestr=`uname`
+if [[ "$unamestr" == 'Linux' ]]; then
+	xdg-open http://$host:8181/onos/v1/docs
+else
+	open http://$host:8181/onos/v1/docs
+fi

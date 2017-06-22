@@ -1,0 +1,58 @@
+# Options read by onos-group for help message formatting and sanity checks.
+GOPTS='install kill patch-vm push-keys uninstall'
+
+# Tab completion settings for onos-group.
+function _ogroup-opts () {
+  local cur=${COMP_WORDS[COMP_CWORD]}
+  if [ $COMP_CWORD -eq 1 ]; then
+    COMPREPLY=( $( compgen -W "${GOPTS} help" -- $cur ) )
+  fi
+}
+
+complete -F _ogroup-opts onos-group
+
+
+# Tab completion settings for stc
+function _stc-opts () {
+  local cur=${COMP_WORDS[COMP_CWORD]}
+  if [ $COMP_CWORD -eq 1 ]; then
+    COMPREPLY=( $( compgen -W "$(cd $ONOS_ROOT/tools/test/scenarios && ls -1 | sed 's/.xml//g')" -- $cur ) )
+  fi
+}
+
+complete -F _stc-opts stc
+
+
+# Tab completion settings for stl
+function _stl-opts () {
+  local cur=${COMP_WORDS[COMP_CWORD]}
+  if [ $COMP_CWORD -eq 1 ]; then
+    COMPREPLY=( $( compgen -W "$(cd /tmp/stc && ls -1)" -- $cur ) )
+  elif [ $COMP_CWORD -eq 2 ]; then
+    COMPREPLY=( $( compgen -W "$(cd /tmp/stc/$3 && ls -1)" -- $cur ) )
+  fi
+}
+
+complete -F _stl-opts stl
+
+
+# Tab completion settings for cell
+function _cell-opts () {
+  local cur=${COMP_WORDS[COMP_CWORD]}
+  if [ $COMP_CWORD -eq 1 ]; then
+    COMPREPLY=( $( compgen -W "$(cd $ONOS_ROOT/tools/test/cells && ls -1) borrow return status" -- $cur ) )
+  fi
+}
+
+complete -F _cell-opts cell vicell
+
+
+# Tab completion settings for onos-create-app.
+function _ocapp-opts () {
+  local cur=${COMP_WORDS[COMP_CWORD]}
+  if [ $COMP_CWORD -eq 1 ]; then
+    COMPREPLY=( $( compgen -W "app bundle ui uitab uitopo cli rest" -- $cur ) )
+  fi
+}
+
+complete -F _ocapp-opts onos-create-app

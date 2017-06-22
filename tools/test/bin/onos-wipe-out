@@ -1,0 +1,9 @@
+#!/bin/bash
+# -----------------------------------------------------------------------------
+# Wipes out all data from the ONOS cluster. Temporary until wipe-out is fixed.
+# -----------------------------------------------------------------------------
+
+for node in ${ONOS_INSTANCES:-$OCI}; do
+    onos $node wipe-out please
+done
+onos-check-summary $OCI '.*' 0 0 0 0 0

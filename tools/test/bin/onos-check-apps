@@ -1,0 +1,34 @@
+#!/bin/bash
+# -----------------------------------------------------------------------------
+# Checks whether all and only the ONOS apps configured in ONOS_APPS are active.
+# -----------------------------------------------------------------------------
+
+[ ! -d "$ONOS_ROOT" ] && echo "ONOS_ROOT is not defined" >&2 && exit 1
+. $ONOS_ROOT/tools/build/envDefaults
+
+aux=/tmp/stc-$$.log
+trap "rm -f $aux $aux.1 $aux.2 2>/dev/null" EXIT
+
+for attempt in {1..30}; do
+    onos ${1:-$OCI} "onos:apps -s -a" | grep -v /bin/client > $aux
+    cat $aux
+
+    # Normalize the installed apps
+    cut -c7- $aux | grep -v '/bin/client' | cut -d\  -f1 | sort > $aux.1
+
+    # Normalize the expected apps
+    apps=${2:-$ONOS_APPS}
+    apps=${apps:-drivers,openflow}
+    (for app in ${apps//,/ }; do echo org.onosproject.$app; done) | sort > $aux.2
+
+    # Check for differences
+    case ${3:-equals} in
+    equals) diff $aux.1 $aux.2;;
+    includes) [ $(egrep -c -f $aux.2 $aux.1) -ge $(wc -l $aux.2 | sed "s|$aux.2||g") ];;
+    excludes) ! egrep -f $aux.2 $aux.1;;
+    esac
+
+    [ $? -eq 0 ] && exit 0 || sleep 1
+done
+
+exit 1;

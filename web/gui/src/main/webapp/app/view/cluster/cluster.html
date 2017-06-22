@@ -1,0 +1,55 @@
+<!-- Cluster partial HTML -->
+<div id="ov-cluster">
+    <div class="tabular-header">
+        <h2>
+            Cluster Nodes ({{tableData.length}} total)
+        </h2>
+        <div class="ctrl-btns">
+            <div class="refresh" ng-class="{active: autoRefresh}"
+                 icon icon-size="42" icon-id="refresh"
+                 tooltip tt-msg="autoRefreshTip"
+                 ng-click="toggleRefresh()"></div>
+        </div>
+    </div>
+
+    <div class="summary-list" onos-table-resize>
+        <div class="table-header" onos-sortable-header>
+            <table>
+                <tr>
+                    <td colId="_iconid_state" class="table-icon" col-width="84px" sortable>Active </td>
+                    <td colId="_iconid_started" class="table-icon" col-width="90px" sortable>Started </td>
+                    <td colId="id" sortable>ID </td>
+                    <td colId="ip" sortable>IP Address </td>
+                    <td colId="tcp" sortable>TCP Port </td>
+                    <td colId="updated" sortable>Last Updated </td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="table-body">
+            <table onos-flash-changes id-prop="id">
+                <tr ng-if="!tableData.length" class="no-data">
+                    <td colspan="5">
+                        {{annots.no_rows_msg}}
+                    </td>
+                </tr>
+
+                <tr ng-repeat="node in tableData track by $index"
+                    ng-repeat-complete row-id="{{node.id}}">
+                    <td class="table-icon">
+                        <div icon icon-id="{{node._iconid_state}}"></div>
+                    </td>
+                    <td class="table-icon">
+                        <div icon icon-id="{{node._iconid_started}}"></div>
+                    </td>
+                    <td>{{node.id}}</td>
+                    <td>{{node.ip}}</td>
+                    <td>{{node.tcp}}</td>
+                    <td>{{node.updated}}</td>
+                </tr>
+            </table>
+        </div>
+
+    </div>
+
+</div>

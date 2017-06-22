@@ -1,0 +1,51 @@
+<!-- Host partial HTML -->
+<div id="ov-host">
+    <div class="tabular-header">
+        <h2>Hosts ({{tableData.length}} total)</h2>
+        <div class="ctrl-btns">
+            <div class="refresh" ng-class="{active: autoRefresh}"
+                 icon icon-size="42" icon-id="refresh"
+                 tooltip tt-msg="autoRefreshTip"
+                 ng-click="toggleRefresh()"></div>
+        </div>
+    </div>
+
+    <div class="summary-list" onos-table-resize>
+        <div class="table-header" onos-sortable-header>
+            <table>
+                <tr>
+                    <td colId="type" class="table-icon"></td>
+                    <td colId="id" sortable>Host ID </td>
+                    <td colId="mac" sortable>MAC Address </td>
+                    <td colId="vlan" sortable>VLAN ID </td>
+                    <td colId="ips" sortable>IP Addresses </td>
+                    <td colId="location" sortable>Location </td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="table-body">
+            <table onos-flash-changes id-prop="id">
+                <tr ng-if="!tableData.length" class="no-data">
+                    <td colspan="6">
+                        {{annots.no_rows_msg}}
+                    </td>
+                </tr>
+
+                <tr ng-repeat="host in tableData track by $index"
+                    ng-repeat-complete row-id="{{host.id}}">
+                    <td class="table-icon">
+                        <div icon icon-id="{{host._iconid_type}}"></div>
+                    </td>
+                    <td>{{host.id}}</td>
+                    <td>{{host.mac}}</td>
+                    <td>{{host.vlan}}</td>
+                    <td>{{host.ips}}</td>
+                    <td>{{host.location}}</td>
+                </tr>
+            </table>
+        </div>
+
+    </div>
+
+</div>

@@ -1,0 +1,17 @@
+#!/bin/bash
+# -----------------------------------------------------------------------------
+# Checks whether all and only the ONOS apps configured in ONOS_APPS are active.
+# -----------------------------------------------------------------------------
+
+[ ! -d "$ONOS_ROOT" ] && echo "ONOS_ROOT is not defined" >&2 && exit 1
+. $ONOS_ROOT/tools/build/envDefaults
+
+aux=/tmp/stc-$$.log
+trap "rm -f $aux 2>/dev/null" EXIT
+
+onos ${1:-$OCI} "onos:ui-views" > $aux
+cat $aux
+
+[ $# -gt 0 ] && shift
+
+grep "${@:-topo}" $aux

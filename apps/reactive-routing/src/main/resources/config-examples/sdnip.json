@@ -1,0 +1,86 @@
+{
+    "bgpPeers" : [
+        {
+            "attachmentDpid" : "00:00:00:00:00:00:00:a3",
+	    "attachmentPort" : "1",
+            "ipAddress" : "192.168.10.1"
+        },
+	{
+            "attachmentDpid" : "00:00:00:00:00:00:00:a5",
+	    "attachmentPort" : "1",
+            "ipAddress" : "192.168.20.1"
+        },
+	{
+            "attachmentDpid" : "00:00:00:00:00:00:00:a2",
+	    "attachmentPort" : "1",
+            "ipAddress" : "192.168.30.1"
+        },
+	{
+            "attachmentDpid" : "00:00:00:00:00:00:00:a6",
+	    "attachmentPort" : "1",
+            "ipAddress" : "192.168.40.1"
+        },
+	{
+            "attachmentDpid" : "00:00:00:00:00:00:00:a4",
+	    "attachmentPort" : "4",
+            "ipAddress" : "192.168.60.1"
+        }
+    ],
+    "bgpSpeakers" : [
+        {
+            "name" : "bgpSpeaker1",
+            "attachmentDpid" : "00:00:00:00:00:00:00:a1",
+            "attachmentPort" : "1",
+            "macAddress" : "00:00:00:00:00:01",
+            "interfaceAddresses" : [
+                {
+		    "interfaceDpid" : "00:00:00:00:00:00:00:a3",
+		    "interfacePort" : "1",
+                    "ipAddress" : "192.168.10.101"
+                },
+                {
+		    "interfaceDpid" : "00:00:00:00:00:00:00:a5",
+		    "interfacePort" : "1",
+                    "ipAddress" : "192.168.20.101"
+                },
+                {
+		    "interfaceDpid" : "00:00:00:00:00:00:00:a2",
+		    "interfacePort" : "1",
+                    "ipAddress" : "192.168.30.101"
+                },
+                {
+		    "interfaceDpid" : "00:00:00:00:00:00:00:a6",
+		    "interfacePort" : "1",
+                    "ipAddress" : "192.168.40.101"
+                },
+                {
+		    "interfaceDpid" : "00:00:00:00:00:00:00:a4",
+		    "interfacePort" : "4",
+                    "ipAddress" : "192.168.60.101"
+                }
+                
+            ]
+            
+        }
+    ],
+    "ip4LocalPrefixes" : [
+        {
+                "ipPrefix" : "100.0.0.0/24",
+                "type" : "PUBLIC",
+                "gatewayIp" : "100.0.0.1"
+        },
+        {
+                "ipPrefix" : "200.0.0.0/8",
+                "type" : "PUBLIC",
+                "gatewayIp" : "200.0.0.3"
+        },
+        {
+                "ipPrefix" : "192.0.0.0/24",
+                "type" : "PRIVATE",
+                "gatewayIp" : "192.0.0.254"
+        }
+    ],
+    "ip6LocalPrefixes" : [
+    ],
+    "virtualGatewayMacAddress" : "00:00:00:00:00:01"
+}

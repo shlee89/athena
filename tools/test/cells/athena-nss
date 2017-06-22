@@ -1,0 +1,16 @@
+export ONOS_NIC="10.215.87.*"
+#export OCI=$OC1
+# onos deploy machines
+export OC1="10.215.87.139"
+export OC2="10.215.87.82"
+export OC3="10.215.87.41"
+# MongoDB Cluster
+#export MD1="10.215.87.121"
+# Spark Cluster
+#export SP1="10.215.87.121"
+
+export ONOS_APPS="drivers,openflow,proxyarp,mobility,fwd"
+export ONOS_USER=ubuntu
+export ONOS_GROUP=ubuntu
+ONOS_WEB_PASS=karaf
+ONOS_WEB_USER=karaf

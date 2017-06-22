@@ -1,0 +1,30 @@
+#!/bin/bash
+# -----------------------------------------------------------------------------
+# Pushes Athena applications to the ONOS instances
+# -----------------------------------------------------------------------------
+
+if [[ $MODE == *"DISTRIBUTED"* ]]; then
+username="ubuntu"
+else
+username=$USER
+fi
+
+cur_dir=${PWD}
+
+echo "Compression"
+cp $ONOS_ROOT/athena-tester/models/AthenaModel.* $ONOS_ROOT/athena-tester/target/
+chmod 777 $ONOS_ROOT/athena-tester/target/
+cd $ONOS_ROOT/athena-tester/ && zip -o -r ./athena_app.zip ./target/*
+
+for i in $*; do
+    echo "Install athena application to" $i
+    ssh $username@$i 'rm -rf ~/*'
+    scp ./athena_app.zip $username@$i:~/
+    done
+
+for i in $*; do
+    echo "Execute athena application on" $i
+    ssh $username@$i 'unzip -o ~/athena_app.zip'
+    ssh $username@$i 'sudo pkill -f "athena-tester-1.6.0.jar"'
+    ssh $username@$i 'cd ~/target && screen -d -m java -cp "./athena-tester-1.6.0.jar:./lib/*" athena.user.application.Main'
+    done

@@ -1,0 +1,34 @@
+#!/bin/bash
+# -----------------------------------------------------------------------------
+# Builds a set of projects using ONOS archetypes.
+# -----------------------------------------------------------------------------
+
+function _usage () {
+cat << _EOF_
+usage:
+ $(basename $0)
+
+summary:
+ Builds a set of projects using ONOS archetypes.
+
+_EOF_
+}
+
+[ "$1" = "-h" ] && _usage && exit 0
+
+set -e
+
+export AROOT=${ONOS_STAGE_ROOT:-/tmp}/foo
+export ARCHETYPE_OPTS="-DarchetypeGroupId=org.onosproject -DarchetypeVersion=1.6.0"
+
+mkdir -p $AROOT
+for an in api bundle cli rest ui uitab uitopo; do
+    cd $AROOT
+    rm -fr $AROOT/foo-$an
+    mvn archetype:generate $ARCHETYPE_OPTS \
+        -DarchetypeArtifactId=onos-$an-archetype \
+        -DgroupId=org.foo -DartifactId=foo-$an -Dversion=1.0 \
+        -Dpackage=org.foo.$an -DinteractiveMode=false
+    cd $AROOT/foo-$an
+    mvn clean install
+done

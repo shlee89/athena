@@ -1,0 +1,29 @@
+#!/bin/bash
+#
+# An example of the Athena configuration file on a single environment
+# by Jinwoo Kim
+
+# unset all variables
+unset $(env | sed -n 's:\(^OC[0-9]\{1,\}\)=.*:\1 :g p')
+unset $(env | sed -n 's:\(^MD[0-9]\{1,\}\)=.*:\1 :g p')
+unset $(env | sed -n 's:\(^SP[0-9]\{1,\}\)=.*:\1 :g p')
+
+# the mode for an Athena environment e.g. SINGLE or DISTRIBUTED
+export MODE="SINGLE"
+
+# the addresses of ONOS instances
+export OC1="127.0.0.1"
+
+# the addresses of MongoDB cluster
+export MD1="127.0.0.1"
+
+# the addresses of Spark cluster
+export SP1="127.0.0.1"
+
+# the path of Athena
+export ATHENA_ROOT=~/athena-1.6
+
+# the parameters for ONOS
+export ONOS_APPS="drivers,openflow,proxyarp,mobility,fwd"
+ONOS_WEB_PASS=karaf
+ONOS_WEB_USER=karaf

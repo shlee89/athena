@@ -1,0 +1,11 @@
+#!/bin/bash
+# -----------------------------------------------------------------------------
+# Logs in to the remote ONOS node.
+# -----------------------------------------------------------------------------
+
+[ ! -d "$ONOS_ROOT" ] && echo "ONOS_ROOT is not defined" >&2 && exit 1
+. $ONOS_ROOT/tools/build/envDefaults
+. $ONOS_ROOT/tools/test/bin/find-node.sh
+
+[ -n "$1" ] && OCI=$(find_node $1) && shift
+ssh -Y $ONOS_USER@$OCI "$@"

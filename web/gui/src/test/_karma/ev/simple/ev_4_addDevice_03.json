@@ -1,0 +1,23 @@
+{
+  "event": "addDevice",
+  "payload": {
+    "id": "of:0000ffffffff0003",
+    "type": "switch",
+    "online": false,
+    "master": "myInstB",
+    "location": {
+      "type": "lnglat",
+      "lat": 40.7127,
+      "lng": -74.0059
+    },
+    "labels": [
+      "",
+      "sw-3",
+      "0000ffffffff0003"
+    ],
+    "metaUi": {
+      "x": 800,
+      "y": 280
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "comments": [
+    "Developing ONOS instance visualization"
+  ],
+  "title": "ONOS Instance Scenario",
+  "params": {
+    "lastAuto": 17
+  },
+  "description": [
+    "Press 'I' to show instance pane.",
+    "Press 'H' to show hosts.",
+    "",
+    "Press '=' to load initial events.",
+    "Press '-' to fire further events."
+  ]
+}

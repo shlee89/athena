@@ -1,0 +1,12 @@
+# Bare metal cluster (1-node)
+
+# Use the 1G NIC for cluster communications
+export ONOS_NIC="10.254.1.*"
+
+# ONOS Test proxy
+export OCT=10.254.1.200
+
+# Use the 1G NICs for external access
+export OC1=10.254.1.201
+
+export ONOS_APPS="drivers,null,intentperf"

@@ -1,0 +1,35 @@
+export ONOS_NIC="192.168.0.*"
+export OCI=$OC1
+# onos deploy machines
+export OC1="192.168.0.11"
+export OC2="192.168.0.12"
+export OC3="192.168.0.13"
+# MongoDB Cluster
+export MD1="192.168.0.31"
+export MD2="192.168.0.32"
+export MD3="192.168.0.33"
+# mininet server
+export MN1="192.168.0.21"
+export MN2="192.168.0.22"
+export SP1="192.168.0.41"
+export SP2="192.168.0.42"
+export SP3="192.168.0.43"
+export ONOS_APPS="drivers,openflow,proxyarp,optical,fwd"
+export ONOS_USER=sdn
+export ONOS_GROUP=sdn
+#for usecase 3
+export M1="10.0.0.1"
+export M2="10.0.0.2"
+export M3="10.0.0.3"
+export M4="10.0.0.4"
+export M5="10.0.0.5"
+export B11="10.0.0.6"
+export B12="10.0.0.7"
+export B13="10.0.0.8"
+export B14="10.0.0.9"
+export B21="10.0.0.10"
+export B22="10.0.0.11"
+export T1="10.0.0.12"
+export T2="10.0.0.13"
+export T3="10.0.0.14"
+export T4="10.0.0.15"

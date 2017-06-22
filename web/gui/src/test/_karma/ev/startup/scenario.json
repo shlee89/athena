@@ -1,0 +1,19 @@
+{
+  "comments": [
+    "This scenario steps through adding devices and links.",
+    "(Typical 'start-ip' of the view.)"
+  ],
+  "title": "Startup Scenario",
+  "params": {
+    "lastAuto": 32
+  },
+  "description": [
+    "Loads 16 devices (10 optical, 6 packet)",
+    " and their associated links.",
+    "",
+    "Press '=' to load initial events.",
+    "Press '-' to fire further events...",
+    " * 4 events - device online, add 3 links",
+    " * 5 events - device offline, remove 4 links"
+  ]
+}

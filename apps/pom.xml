@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2014-present Open Networking Laboratory
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  --><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.onosproject</groupId>
+        <artifactId>onos</artifactId>
+        <version>1.6.0</version>
+    </parent>
+
+    <artifactId>onos-apps</artifactId>
+    <packaging>pom</packaging>
+
+    <description>ONOS sample applications</description>
+
+    <modules>
+        <module>acl</module>
+        <module>faultmanagement</module>
+        <module>fwd</module>
+        <module>mobility</module>
+        <module>proxyarp</module>
+        <module>sdnip</module>
+        <module>optical</module>
+        <module>newoptical</module>
+        <module>metrics</module>
+        <module>routing</module>
+        <module>routing-api</module>
+        <module>reactive-routing</module>
+        <module>virtualbng</module>
+        <module>bgprouter</module>
+        <module>bgpflowspec</module>
+        <module>test</module>
+        <module>segmentrouting</module>
+        <module>xos-integration</module>
+        <module>kafka-integration</module>
+        <module>pcep-api</module>
+        <module>iptopology-api</module>
+        <module>pce</module>
+        <module>cip</module>
+        <module>flowanalyzer</module>
+        <module>vtn</module>
+        <module>dhcp</module>
+        <module>mfwd</module>
+        <module>pim</module>
+        <module>mlb</module>
+        <module>pathpainter</module>
+        <module>drivermatrix</module>
+        <module>cpman</module>
+        <module>events</module>
+        <module>vrouter</module>
+        <module>vpls</module>
+        <module>openstacknode</module>
+        <module>openstacknetworking</module>
+        <module>openstackinterface</module>
+        <module>influxdbmetrics</module>
+        <module>gangliametrics</module>
+        <module>graphitemetrics</module>
+        <module>xosclient</module>
+        <module>scalablegateway</module>
+        <module>bmv2-demo</module>
+        <!-- Athena proxy (Core stuff) -->
+        <module>athena-proxy</module>
+        <!-- Athena evaluation applications -->
+        <module>athena-fwd</module>
+        <module>athena-loadbalance</module>
+        <module>athena-security</module>
+    </modules>
+
+
+    <properties>
+        <web.context>default</web.context>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.onosproject</groupId>
+            <artifactId>onos-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.onosproject</groupId>
+            <artifactId>onlab-osgi</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.felix</groupId>
+            <artifactId>org.apache.felix.scr.annotations</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-scr-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.onosproject</groupId>
+                <artifactId>onos-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

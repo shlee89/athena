@@ -1,0 +1,38 @@
+#!/bin/bash
+#
+# Script to setup MongoDB cluster
+# by Jinwoo Kim
+
+# Prints usage help
+function _usage {
+cat << _EOF_
+Usage: Remotely starts ONOS cluster.
+_EOF_
+}
+
+[ "$1" = "-h" ] && _usage && exit 0
+
+USERNAME=ubuntu
+source $ATHENA_ROOT/athena-tool/config/athena-config-env
+
+# get ONOS IP addresses
+MDIS=$(env | grep OC[0-9] | cut -d= -f2)
+IFS=' ' read -r -a LIST <<< $MDIS
+
+if [ -z "$LIST" ]; then
+  printf "error: no ONOS instances configured, quitting early\n" >&2 && exit 0
+fi
+
+len=${#LIST[@]}
+
+# start ONOS cluster
+printf "starting ONOS instances as distributed mode...\n"
+for NODE in ${LIST[@]}; do
+    ssh -tt $USERNAME@$NODE "
+        sudo apt-get install software-properties-common -y
+        sudo add-apt-repository ppa:webupd8team/java -y
+        sudo apt-get update && sudo apt-get install oracle-java8-installer oracle-java8-set-default -y
+    "
+done
+
+exit 0
