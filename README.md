@@ -225,6 +225,13 @@ Use different scripts according to the usecases -->
 $ cd <Athena>/athena-tester/bin
 $ ./athena-run-realtime
 ```
++ Before executing the Athena real-time script, you should edit it to set up the configuration script. See below. (Thanks to **James A** for the bug report)
+
+```
+...
+source $ATHENA_ROOT/athena-tool/config/athena-config-env #athena-config-env-single or -distributed for the single and distribute modes respectively.
+...
+```
 
 #### 2. Big Data Analysis
 
