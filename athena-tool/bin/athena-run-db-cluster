@@ -13,7 +13,7 @@ _EOF_
 [ "$1" = "-h" ] && _usage && exit 0
 
 USERNAME=ubuntu
-source $ATHENA_ROOT/athena-tool/config/athena-config-env
+source $ATHENA_ROOT/athena-tool/config/athena-config-env-distributed
 
 # get MongoDB IP addresses
 MDIS=$(env | grep MD[0-9] | cut -d= -f2)
